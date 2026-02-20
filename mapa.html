@@ -11,107 +11,31 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <style>
-    /* Evita que algo “apriete” el mapa */
-    .map-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 18px;
-      width: 100%;
-    }
+    .map-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; width: 100%; }
+    .map-card { overflow: hidden; border-radius: 18px; }
+    #map { width: 100%; height: 78vh; min-height: 520px; }
+    @media (max-width: 1024px) { #map { height: 70vh; min-height: 460px; } }
+    @media (max-width: 640px) { #map { height: 60vh; min-height: 360px; } }
 
-    .map-card {
-      overflow: hidden;
-      border-radius: 18px;
-    }
-
-    /* ✅ MAPA: grande en PC (como “antes”) */
-    #map {
-      width: 100%;
-      height: 78vh;
-      min-height: 520px;
-    }
-
-    /* Tablet */
-    @media (max-width: 1024px) {
-      #map {
-        height: 70vh;
-        min-height: 460px;
-      }
-    }
-
-    /* Móvil */
-    @media (max-width: 640px) {
-      #map {
-        height: 60vh;
-        min-height: 360px;
-      }
-    }
-
-    /* ✅ Fallback por si tu styles.css no incluye modal */
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      z-index: 260000;
-    }
-
-    .modal.open {
-      display: block;
-    }
-
-    .modal__backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(4px);
-    }
-
+    .modal { position: fixed; inset: 0; display: none; z-index: 260000; }
+    .modal.open { display: block; }
+    .modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); }
     .modal__card {
-      position: relative;
-      max-width: 560px;
-      width: calc(100% - 24px);
-      margin: 70px auto 24px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(17, 119, 204, 0.18);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+      position: relative; max-width: 560px; width: calc(100% - 24px); margin: 70px auto 24px;
+      border-radius: 18px; background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(17,119,204,0.18);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.18);
       overflow: hidden;
     }
-
     .modal__head {
-      padding: 14px 16px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      border-bottom: 1px solid rgba(17, 119, 204, 0.10);
-      background: rgba(234, 246, 255, 0.65);
+      padding: 14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      border-bottom: 1px solid rgba(17,119,204,0.10);
+      background: rgba(234,246,255,0.65);
     }
-
-    .modal__title {
-      font-weight: 1000;
-      font-size: 16px;
-    }
-
-    .modal__subtitle {
-      font-weight: 800;
-      font-size: 12px;
-      color: #4a6173;
-      margin-top: 2px;
-    }
-
-    .modal__close {
-      cursor: pointer;
-      border: none;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 12px;
-      padding: 8px 10px;
-      font-weight: 900;
-    }
-
-    .modal__body {
-      padding: 14px 16px 16px;
-    }
+    .modal__title { font-weight: 1000; font-size: 16px; }
+    .modal__subtitle { font-weight: 800; font-size: 12px; color: #4a6173; margin-top: 2px; }
+    .modal__close { cursor:pointer; border:none; background: rgba(255,255,255,0.9); border-radius: 12px; padding: 8px 10px; font-weight: 900; }
+    .modal__body { padding: 14px 16px 16px; }
   </style>
 </head>
 
@@ -129,7 +53,6 @@
         <a class="nav__link nav__link--active" href="mapa.html">Mapa</a>
       </nav>
 
-      <!-- ✅ USER con dropdown (igual que en index) -->
       <div class="user user--menu" id="userMenuWrap">
         <a class="user__btn" href="login.html" id="userBtn" aria-label="Cuenta">
           <span class="user__text" id="userLabel">Login</span>
@@ -137,9 +60,7 @@
 
         <div class="user-dropdown" id="userDropdown" aria-label="Menú usuario">
           <a class="user-dropdown__item" href="configurar.html" id="configUserBtn">⚙️ Configurar usuario</a>
-          <button class="user-dropdown__item user-dropdown__danger" type="button" id="logoutTopBtn">
-            🚪 Cerrar sesión
-          </button>
+          <button class="user-dropdown__item user-dropdown__danger" type="button" id="logoutTopBtn">🚪 Cerrar sesión</button>
         </div>
       </div>
     </div>
@@ -152,12 +73,9 @@
           <h2 class="map-title">Mapa - La Nucía</h2>
           <p class="map-subtitle">Doble click en el mapa para añadir voluntario o punto de alimentación.</p>
 
-          <!-- Botones arriba -->
           <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
             <button class="btn btn--primary" id="shareBtn" type="button">Compartir mapa</button>
             <button class="btn btn--ghost" id="searchVolunteerBtn" type="button">Voluntarios</button>
-
-            <!-- ✅ buscador de puntos -->
             <button class="btn btn--ghost" id="searchFoodBtn" type="button">Puntos</button>
           </div>
         </div>
@@ -171,18 +89,14 @@
     </div>
   </main>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
   </footer>
 
-  <!-- ✅ input oculto para foto desde archivos -->
   <input id="photoInput" type="file" accept="image/*" style="display:none;" />
 
-  <!-- ✅ MODAL para elegir foto (gesto de usuario real => abre el selector SI o SI) -->
   <div id="photoModal" class="modal" aria-hidden="true">
     <div class="modal__backdrop" id="photoModalBg"></div>
-
     <div class="modal__card" role="dialog" aria-modal="true" aria-label="Añadir foto">
       <div class="modal__head">
         <div>
@@ -191,121 +105,96 @@
         </div>
         <button class="modal__close" id="photoModalClose" type="button">✖</button>
       </div>
-
       <div class="modal__body">
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn--primary" id="pickPhotoBtn" type="button">📷 Elegir archivo</button>
           <button class="btn btn--ghost" id="skipPhotoBtn" type="button">Omitir</button>
         </div>
-
-        <p class="note" style="margin-top:10px;">
-          * Si cancelas el selector, se guardará sin foto.
-        </p>
+        <p class="note" style="margin-top:10px;">* Si cancelas el selector, se guardará sin foto.</p>
       </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
+    // ====== SUPABASE CONFIG ======
+    const SUPABASE_URL = "https://vkyusosabullpvudxafy.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_8JbsqfmoH05omWj1p2jPXg_EwZDntlT";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const BUCKET = "marker-photos";
+
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // =========================
-    // SESIÓN LOCAL
-    // =========================
-    function getCurrentUserEmail() {
-      return localStorage.getItem("currentUserEmail");
+    // ====== helpers ======
+    function fpIdFromLatLng(lat, lng) {
+      return `fp:${Number(lat).toFixed(6)}:${Number(lng).toFixed(6)}`;
     }
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[m]));
+    }
+    function escapeAttr(str) { return escapeHtml(str).replace(/`/g, "&#096;"); }
 
-    function requireLogin() {
-      const email = getCurrentUserEmail();
-      if (!email) {
+    // ====== session required ======
+    let currentUser = null;
+
+    async function requireLoginSupabase() {
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
+      if (!session) {
         window.location.href = "login.html";
         return null;
       }
-      return email;
+      return session.user;
     }
 
-    const currentEmail = requireLogin();
-    if (!currentEmail) throw new Error("No session");
-
-    // =============================
-    // ✅ USER TOPBAR (dropdown)
-    // =============================
-    (function () {
+    // ====== UI header dropdown ======
+    async function setupHeader(user) {
       const userLabel = document.getElementById("userLabel");
       const userBtn = document.getElementById("userBtn");
       const logoutTopBtn = document.getElementById("logoutTopBtn");
       const wrap = document.getElementById("userMenuWrap");
-      const dropdown = document.getElementById("userDropdown");
 
-      if (!userLabel || !userBtn || !logoutTopBtn || !wrap || !dropdown) return;
-
-      const profileKey = `profile:${currentEmail}`;
-      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
-
-      const displayName = (profile.displayName && profile.displayName.trim() !== "")
-        ? profile.displayName.trim()
-        : currentEmail;
-
-      userLabel.textContent = displayName;
+      const email = user?.email || "Cuenta";
+      userLabel.textContent = email;
       userBtn.href = "#";
-
-      if (profile.photoUrl && profile.photoUrl.trim() !== "") {
-        if (!document.getElementById("userAvatarImg")) {
-          const img = document.createElement("img");
-          img.id = "userAvatarImg";
-          img.src = profile.photoUrl.trim();
-          img.alt = "Avatar";
-          img.className = "user__avatar";
-          userBtn.insertBefore(img, userBtn.firstChild);
-        }
-      }
 
       userBtn.addEventListener("click", (e) => {
         e.preventDefault();
         wrap.classList.toggle("open");
       });
 
-      logoutTopBtn.addEventListener("click", () => {
-        localStorage.removeItem("currentUserEmail");
+      logoutTopBtn.addEventListener("click", async () => {
+        await supabase.auth.signOut();
         window.location.href = "login.html";
       });
 
       document.addEventListener("click", (e) => {
         if (!wrap.contains(e.target)) wrap.classList.remove("open");
       });
-    })();
+    }
 
-    // =============================
-    // KEYS (por usuario)
-    // =============================
-    const STORAGE_KEY_MARKERS = `markerLocations:${currentEmail}`;
-    const SHARES_KEY = `shares:${currentEmail}`;
-
-    // =============================
-    // MAPA (LA NUCÍA)
-    // =============================
-    const map = L.map('map').setView([38.6140, -0.1266], 14);
+    // ====== Map setup ======
+    const map = L.map("map").setView([38.6140, -0.1266], 14);
     setTimeout(() => map.invalidateSize(), 200);
 
-    const normal = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    const normal = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
     });
-
     const satellite = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles © Esri' }
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { attribution: "Tiles © Esri" }
     );
-
     normal.addTo(map);
     L.control.layers({ "Mapa normal": normal, "Satélite": satellite }).addTo(map);
-
     map.doubleClickZoom.disable();
 
-    // =============================
-    // ICONOS
-    // =============================
     function makePinIcon(color) {
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 24 24">
@@ -313,11 +202,8 @@
           <circle cx="12" cy="9" r="2.6" fill="#ffffff"/>
         </svg>
       `.trim();
-
-      const url = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
-
       return L.icon({
-        iconUrl: url,
+        iconUrl: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
         iconSize: [34, 46],
         iconAnchor: [17, 46],
         popupAnchor: [0, -40]
@@ -327,50 +213,121 @@
     const volunteerIcon = makePinIcon("#e53935");
     const foodIcon = makePinIcon("#1e8e3e");
 
-    // =============================
-    // helpers voluntario -> punto
-    // =============================
-    function fpIdFromLatLng(lat, lng) {
-      const a = Number(lat).toFixed(6);
-      const b = Number(lng).toFixed(6);
-      return `fp:${a}:${b}`;
+    // ====== state ======
+    let markerLocations = [];              // array de DB
+    const markersById = new Map();         // id -> leaflet marker
+
+    function getPublicUrl(path) {
+      if (!path) return "";
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      return data?.publicUrl || "";
     }
 
-    function getFoodPointNameById(foodPointId) {
-      if (!foodPointId) return "";
-      const fp = markerLocations.find(m => m.type === "Punto de alimentación" && m.fpId === foodPointId);
+    function getFoodPointNameByFpId(fpId) {
+      const fp = markerLocations.find(m => m.type === "Punto de alimentación" && m.fp_id === fpId);
       return fp ? (fp.name || "Punto de alimentación") : "";
     }
 
-    // =============================
-    // ✅ FOTO desde archivos (base64)
-    // =============================
-    const photoInput = document.getElementById("photoInput");
+    // ====== render marker ======
+    function createMarkerFromRow(row) {
+      const icon = (row.type === "Punto de alimentación") ? foodIcon : volunteerIcon;
 
-    function pickImageFile(callback) {
-      if (!photoInput) return callback(null);
+      let belongsHtml = "";
+      if (row.type === "Voluntario") {
+        const fpName = getFoodPointNameByFpId(row.food_point_id || "");
+        belongsHtml = fpName
+          ? `<div style="margin-top:8px; padding:8px; border-radius:12px; background: rgba(30,142,62,0.10); border: 1px solid rgba(30,142,62,0.22);">
+              <b>🟢 Pertenece a:</b> ${escapeHtml(fpName)}
+            </div>`
+          : `<div class="note" style="margin-top:8px;">(No asignado a ningún punto de alimentación)</div>`;
+      }
 
-      photoInput.value = "";
+      const typeColor = (row.type === "Punto de alimentación") ? "#1e8e3e" : "#e53935";
+      const photoUrl = row.photo_path ? getPublicUrl(row.photo_path) : "";
 
-      const onChange = () => {
-        const file = photoInput.files && photoInput.files[0];
-        photoInput.removeEventListener("change", onChange);
+      const marker = L.marker([row.lat, row.lng], { icon }).addTo(map)
+        .bindPopup(`
+          <b>${escapeHtml(row.name)}</b><br>
+          <span style="font-weight:900;color:${typeColor};">${escapeHtml(row.type)}</span><br>
+          ${escapeHtml(row.description)}<br>
+          ${photoUrl ? `<img src="${escapeAttr(photoUrl)}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;margin-top:8px;">` : ""}
+          ${belongsHtml}
+          <div style="margin-top:10px;">
+            <button type="button" class="popup-btn danger"
+              data-action="delete"
+              data-id="${row.id}">
+              Eliminar
+            </button>
+          </div>
+        `)
+        .bindTooltip(row.name, { direction: "top" });
 
-        if (!file) return callback(null);
-
-        const reader = new FileReader();
-        reader.onload = () => callback(String(reader.result || ""));
-        reader.onerror = () => callback(null);
-        reader.readAsDataURL(file);
-      };
-
-      photoInput.addEventListener("change", onChange, { once: true });
-      photoInput.click();
+      markersById.set(row.id, marker);
     }
 
-    // =============================
-    // ✅ Modal de foto (para que SI se abra el selector)
-    // =============================
+    function clearAllMarkers() {
+      markersById.forEach(m => map.removeLayer(m));
+      markersById.clear();
+    }
+
+    async function loadMarkers() {
+      const { data, error } = await supabase
+        .from("markers")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        alert("Error cargando marcadores: " + error.message);
+        return;
+      }
+
+      markerLocations = data || [];
+      clearAllMarkers();
+      markerLocations.forEach(createMarkerFromRow);
+    }
+
+    // ====== delete marker ======
+    async function deleteMarkerById(id) {
+      const row = markerLocations.find(m => m.id === id);
+      if (!row) return;
+
+      // 1) borra en DB
+      const { error } = await supabase.from("markers").delete().eq("id", id);
+      if (error) return alert("Error borrando: " + error.message);
+
+      // 2) borra foto si existe
+      if (row.photo_path) {
+        await supabase.storage.from(BUCKET).remove([row.photo_path]);
+      }
+
+      // 3) refresca
+      await loadMarkers();
+    }
+
+    map.on("popupopen", function (e) {
+      const root = e.popup.getElement();
+      if (!root) return;
+
+      root.querySelectorAll("button[data-action='delete']").forEach(btn => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+
+        btn.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+
+          const id = Number(btn.dataset.id);
+          const ok = confirm("¿Seguro que quieres eliminar este marcador?");
+          if (!ok) return;
+
+          await deleteMarkerById(id);
+          map.closePopup();
+        });
+      });
+    });
+
+    // ====== photo modal (file upload) ======
+    const photoInput = document.getElementById("photoInput");
     const photoModal = document.getElementById("photoModal");
     const photoModalBg = document.getElementById("photoModalBg");
     const photoModalClose = document.getElementById("photoModalClose");
@@ -381,79 +338,62 @@
 
     function openPhotoModal(cb) {
       __photoCb = cb;
-      if (!photoModal) return cb(null);
-
       photoModal.classList.add("open");
       photoModal.setAttribute("aria-hidden", "false");
     }
-
     function closePhotoModal() {
-      if (!photoModal) return;
       photoModal.classList.remove("open");
       photoModal.setAttribute("aria-hidden", "true");
     }
-
-    function finishPhotoModal(result) {
+    function finishPhotoModal(fileOrNull) {
       const cb = __photoCb;
       __photoCb = null;
       closePhotoModal();
-      if (cb) cb(result);
+      if (cb) cb(fileOrNull);
     }
 
-    if (photoModalBg) photoModalBg.addEventListener("click", () => finishPhotoModal(null));
-    if (photoModalClose) photoModalClose.addEventListener("click", () => finishPhotoModal(null));
-
+    photoModalBg.addEventListener("click", () => finishPhotoModal(null));
+    photoModalClose.addEventListener("click", () => finishPhotoModal(null));
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && photoModal && photoModal.classList.contains("open")) {
-        finishPhotoModal(null);
-      }
+      if (e.key === "Escape" && photoModal.classList.contains("open")) finishPhotoModal(null);
     });
+    skipPhotoBtn.addEventListener("click", () => finishPhotoModal(null));
 
-    if (skipPhotoBtn) {
-      skipPhotoBtn.addEventListener("click", () => finishPhotoModal(null));
+    function pickImageFile(cb) {
+      photoInput.value = "";
+      const onChange = () => {
+        const file = photoInput.files && photoInput.files[0];
+        photoInput.removeEventListener("change", onChange);
+        cb(file || null);
+      };
+      photoInput.addEventListener("change", onChange, { once: true });
+      photoInput.click();
     }
 
-    if (pickPhotoBtn) {
-      pickPhotoBtn.addEventListener("click", () => {
-        pickImageFile((dataUrl) => {
-          finishPhotoModal(dataUrl || null);
-        });
-      });
-    }
-
-    // =============================
-    // DATOS LOCALES
-    // =============================
-    let markerLocations = JSON.parse(localStorage.getItem(STORAGE_KEY_MARKERS)) || [];
-    const markersByKey = new Map();
-
-    (function migrateMarkers() {
-      let changed = false;
-
-      markerLocations.forEach(m => {
-        if (m.type === "Punto de alimentación" && !m.fpId) {
-          m.fpId = fpIdFromLatLng(m.lat, m.lng);
-          changed = true;
-        }
-        if (m.type === "Voluntario" && typeof m.foodPointId === "undefined") {
-          m.foodPointId = "";
-          changed = true;
-        }
-      });
-
-      if (changed) {
-        localStorage.setItem(STORAGE_KEY_MARKERS, JSON.stringify(markerLocations));
-      }
-    })();
-
-    markerLocations.forEach(loc => {
-      createMarker(loc.lat, loc.lng, loc.type, loc.name, loc.description, loc.photo);
+    pickPhotoBtn.addEventListener("click", () => {
+      pickImageFile((file) => finishPhotoModal(file));
     });
 
-    // =============================
-    // DOBLE CLICK -> AÑADIR (✅ modal foto)
-    // =============================
-    map.on('dblclick', function (e) {
+    async function uploadPhotoIfAny(file) {
+      if (!file) return "";
+
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${currentUser.id}/${crypto.randomUUID()}.${safeExt}`;
+
+      const { error } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type });
+
+      if (error) {
+        alert("Error subiendo foto: " + error.message);
+        return "";
+      }
+      return path;
+    }
+
+    // ====== add marker ======
+    map.on("dblclick", async function (e) {
       const { lat, lng } = e.latlng;
 
       const option = prompt(
@@ -470,126 +410,30 @@
 
       const name = prompt("Nombre:");
       const description = prompt("Descripción:");
-
       if (!name || !description) return;
 
-      const saveMarker = (photoDataUrl) => {
-        const obj = { lat, lng, type, name, description, photo: photoDataUrl || "" };
+      openPhotoModal(async (fileOrNull) => {
+        const photo_path = await uploadPhotoIfAny(fileOrNull);
 
-        if (type === "Punto de alimentación") obj.fpId = fpIdFromLatLng(lat, lng);
-        if (type === "Voluntario") obj.foodPointId = "";
+        const row = {
+          owner_id: currentUser.id,
+          lat, lng, type,
+          name, description,
+          photo_path: photo_path || null,
+          fp_id: type === "Punto de alimentación" ? fpIdFromLatLng(lat, lng) : null,
+          food_point_id: type === "Voluntario" ? "" : null
+        };
 
-        markerLocations.push(obj);
-        localStorage.setItem(STORAGE_KEY_MARKERS, JSON.stringify(markerLocations));
-        createMarker(lat, lng, type, name, description, obj.photo);
-      };
+        const { error } = await supabase.from("markers").insert(row);
+        if (error) return alert("Error guardando marcador: " + error.message);
 
-      // ✅ En vez de confirm(), abrimos modal (mucho más fiable)
-      openPhotoModal((dataUrlOrNull) => {
-        saveMarker(dataUrlOrNull || "");
+        await loadMarkers();
       });
     });
 
-    // =============================
-    // CREAR MARCADOR + BORRAR (tu sistema)
-    // =============================
-    function createMarker(lat, lng, type, name, description, photo) {
-      const icon = (type === "Punto de alimentación") ? foodIcon : volunteerIcon;
-
-      let belongsHtml = "";
-      if (type === "Voluntario") {
-        const obj = markerLocations.find(m =>
-          m.type === "Voluntario" && Number(m.lat) === Number(lat) && Number(m.lng) === Number(lng)
-        );
-
-        const fpName = obj ? getFoodPointNameById(obj.foodPointId) : "";
-
-        if (fpName) {
-          belongsHtml = `
-            <div style="margin-top:8px; padding:8px; border-radius:12px; background: rgba(30,142,62,0.10); border: 1px solid rgba(30,142,62,0.22);">
-              <b>🟢 Pertenece a:</b> ${escapeHtml(fpName)}
-            </div>
-          `;
-        } else {
-          belongsHtml = `
-            <div class="note" style="margin-top:8px;">
-              (No asignado a ningún punto de alimentación)
-            </div>
-          `;
-        }
-      }
-
-      const typeColor = (type === "Punto de alimentación") ? "#1e8e3e" : "#e53935";
-
-      const marker = L.marker([lat, lng], { icon }).addTo(map)
-        .bindPopup(`
-          <b>${escapeHtml(name)}</b><br>
-          <span style="font-weight:900;color:${typeColor};">
-            ${escapeHtml(type)}
-          </span><br>
-          ${escapeHtml(description)}<br>
-          ${photo ? `<img src="${escapeAttr(photo)}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;margin-top:8px;">` : ""}
-          ${belongsHtml}
-          <div style="margin-top:10px;">
-            <button type="button" class="popup-btn danger"
-              data-action="delete"
-              data-lat="${lat}"
-              data-lng="${lng}">
-              Eliminar
-            </button>
-          </div>
-        `)
-        .bindTooltip(name, { direction: 'top' });
-
-      const key = buildKey(type, name, lat, lng);
-      markersByKey.set(key, marker);
-    }
-
-    map.on("popupopen", function (e) {
-      const root = e.popup.getElement();
-      if (!root) return;
-
-      root.querySelectorAll("button[data-action='delete']").forEach(btn => {
-        if (btn.dataset.bound === "1") return;
-        btn.dataset.bound = "1";
-
-        btn.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-
-          const lat = Number(btn.dataset.lat);
-          const lng = Number(btn.dataset.lng);
-
-          const ok = confirm("¿Seguro que quieres eliminar este marcador?");
-          if (!ok) return;
-
-          deleteMarker(lat, lng);
-          map.closePopup();
-        });
-      });
-    });
-
-    function deleteMarker(lat, lng) {
-      map.eachLayer(function (layer) {
-        if (layer instanceof L.Marker &&
-          layer.getLatLng().lat === lat &&
-          layer.getLatLng().lng === lng) {
-          map.removeLayer(layer);
-        }
-      });
-
-      markerLocations = markerLocations.filter(loc => !(loc.lat === lat && loc.lng === lng));
-      localStorage.setItem(STORAGE_KEY_MARKERS, JSON.stringify(markerLocations));
-
-      markersByKey.clear();
-      markerLocations.forEach(loc => createMarker(loc.lat, loc.lng, loc.type, loc.name, loc.description, loc.photo));
-    }
-
-    // =============================
-    // BUSCAR VOLUNTARIO
-    // =============================
+    // ====== search buttons ======
     document.getElementById("searchVolunteerBtn").addEventListener("click", () => {
-      const query = prompt("¿Qué voluntario quieres buscar? (escribe nombre o parte del nombre)");
+      const query = prompt("¿Qué voluntario quieres buscar? (nombre o parte del nombre)");
       if (!query) return;
 
       const q = query.trim().toLowerCase();
@@ -597,39 +441,21 @@
         m.type === "Voluntario" && (m.name || "").toLowerCase().includes(q)
       );
 
-      if (volunteers.length === 0) {
-        alert("No se encontró ningún voluntario con ese nombre.");
-        return;
-      }
+      if (volunteers.length === 0) return alert("No se encontró ningún voluntario con ese nombre.");
+      const chosen = volunteers.length === 1 ? volunteers[0] : (() => {
+        const menu = volunteers.map((v, i) => `${i + 1}) ${v.name}`).join("\n");
+        const choice = prompt(`He encontrado varios. Elige uno:\n\n${menu}\n\nEscribe el número:`);
+        const idx = Number(choice) - 1;
+        if (Number.isNaN(idx) || idx < 0 || idx >= volunteers.length) return null;
+        return volunteers[idx];
+      })();
 
-      if (volunteers.length === 1) {
-        focusVolunteer(volunteers[0]);
-        return;
-      }
-
-      const menu = volunteers.map((v, i) => `${i + 1}) ${v.name}`).join("\n");
-      const choice = prompt(`He encontrado varios. Elige uno:\n\n${menu}\n\nEscribe el número:`);
-
-      const idx = Number(choice) - 1;
-      if (Number.isNaN(idx) || idx < 0 || idx >= volunteers.length) {
-        alert("Selección no válida.");
-        return;
-      }
-
-      focusVolunteer(volunteers[idx]);
+      if (!chosen) return;
+      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
+      const marker = markersById.get(chosen.id);
+      if (marker) marker.openPopup();
     });
 
-    function focusVolunteer(v) {
-      const key = buildKey(v.type, v.name, v.lat, v.lng);
-      const marker = markersByKey.get(key);
-
-      map.setView([v.lat, v.lng], 17, { animate: true });
-      if (marker) marker.openPopup();
-    }
-
-    // =============================
-    // BUSCAR PUNTO DE ALIMENTACIÓN
-    // =============================
     document.getElementById("searchFoodBtn").addEventListener("click", () => {
       const query = prompt("¿Qué punto de alimentación quieres buscar? (nombre o parte del nombre)");
       if (!query) return;
@@ -639,84 +465,52 @@
         m.type === "Punto de alimentación" && (m.name || "").toLowerCase().includes(q)
       );
 
-      if (points.length === 0) {
-        alert("No se encontró ningún punto de alimentación con ese nombre.");
-        return;
-      }
+      if (points.length === 0) return alert("No se encontró ningún punto de alimentación con ese nombre.");
+      const chosen = points.length === 1 ? points[0] : (() => {
+        const menu = points.map((p, i) => `${i + 1}) ${p.name}`).join("\n");
+        const choice = prompt(`He encontrado varios puntos. Elige uno:\n\n${menu}\n\nEscribe el número:`);
+        const idx = Number(choice) - 1;
+        if (Number.isNaN(idx) || idx < 0 || idx >= points.length) return null;
+        return points[idx];
+      })();
 
-      if (points.length === 1) {
-        focusFoodPoint(points[0]);
-        return;
-      }
-
-      const menu = points.map((p, i) => `${i + 1}) ${p.name}`).join("\n");
-      const choice = prompt(`He encontrado varios puntos. Elige uno:\n\n${menu}\n\nEscribe el número:`);
-
-      const idx = Number(choice) - 1;
-      if (Number.isNaN(idx) || idx < 0 || idx >= points.length) {
-        alert("Selección no válida.");
-        return;
-      }
-
-      focusFoodPoint(points[idx]);
+      if (!chosen) return;
+      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
+      const marker = markersById.get(chosen.id);
+      if (marker) marker.openPopup();
     });
 
-    function focusFoodPoint(p) {
-      const key = buildKey(p.type, p.name, p.lat, p.lng);
-      const marker = markersByKey.get(key);
-
-      map.setView([p.lat, p.lng], 17, { animate: true });
-      if (marker) marker.openPopup();
-    }
-
-    function buildKey(type, name, lat, lng) {
-      return `${type}:${String(name).toLowerCase()}:${lat}:${lng}`;
-    }
-
-    // =============================
-    // COMPARTIR (LOCAL)
-    // =============================
-    document.getElementById("shareBtn").addEventListener("click", () => {
+    // ====== share button (DB) ======
+    document.getElementById("shareBtn").addEventListener("click", async () => {
       const email = prompt("Correo de la persona con la que quieres compartir el mapa:");
       if (!email) return;
-
       const clean = email.trim().toLowerCase();
-      if (!clean.includes("@")) {
-        alert("Correo no válido.");
-        return;
-      }
+      if (!clean.includes("@")) return alert("Correo no válido.");
 
-      const list = JSON.parse(localStorage.getItem(SHARES_KEY)) || [];
-      if (list.includes(clean)) {
-        alert("Ya está compartido con ese correo.");
-        return;
-      }
+      const { error } = await supabase.from("shares").insert({
+        owner_id: currentUser.id,
+        shared_email: clean
+      });
 
-      list.push(clean);
-      localStorage.setItem(SHARES_KEY, JSON.stringify(list));
-      alert("Compartido (modo local) con: " + clean);
+      if (error) return alert("Error compartiendo: " + error.message);
+      alert("Compartido con: " + clean);
     });
 
-    // =============================
-    // LOGOUT
-    // =============================
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("currentUserEmail");
+    // ====== logout right button ======
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
       window.location.href = "login.html";
     });
 
-    // Utils escape
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, (m) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-      }[m]));
-    }
+    // ====== init ======
+    (async function init() {
+      currentUser = await requireLoginSupabase();
+      if (!currentUser) return;
 
-    function escapeAttr(str) {
-      return escapeHtml(str).replace(/`/g, "&#096;");
-    }
+      await setupHeader(currentUser);
+      await loadMarkers();
+    })();
   </script>
 
 </body>
-
 </html>

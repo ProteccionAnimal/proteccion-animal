@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Proteccion Animal - Inicio</title>
+  <title>Proteccion Animal - Crear cuenta</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
@@ -34,7 +34,7 @@
   <main class="auth-wrap">
     <div class="auth-card">
       <h1 class="auth-title">Crear cuenta</h1>
-      <p class="auth-subtitle">Modo local (solo para pruebas). Luego lo pasamos a Supabase.</p>
+      <p class="auth-subtitle">Con Supabase.</p>
 
       <div class="form">
         <input class="input" id="email" type="email" placeholder="Email" autocomplete="email" />
@@ -50,13 +50,16 @@
     </div>
   </main>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
   </footer>
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
   <script>
-    // Año footer (si quieres)
+    // Año footer
     const yearEl = document.getElementById("year");
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
@@ -70,65 +73,54 @@
       msgEl.style.fontWeight = "900";
     }
 
-    // ✅ HEADER: mostrar nombre visible si existe, si no correo, si no sesión -> Login
-    (function applyUserHeader() {
-      const current = localStorage.getItem("currentUserEmail");
+    // Header dinámico (display_name > email)
+    async function applyUserHeader() {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+
       const userText = document.getElementById("userText");
       const userBtn = document.getElementById("userBtn");
       if (!userText || !userBtn) return;
 
-      // Sin sesión
-      if (!current) {
+      if (!user) {
         userText.textContent = "Login";
         userBtn.href = "login.html";
         return;
       }
 
-      // Con sesión -> perfil
-      const profileKey = `profile:${current}`;
-      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
+      const displayName = (user.user_metadata?.display_name || "").trim();
+      userText.textContent = displayName || user.email || "Cuenta";
+      userBtn.href = "mapa.html";
+    }
 
-      const displayName = (profile.displayName && profile.displayName.trim() !== "")
-        ? profile.displayName.trim()
-        : current;
-
-      userText.textContent = displayName;
-
-      // Si quieres: si tiene foto, pon avatar (requiere CSS .user__avatar)
-      if (profile.photoUrl && profile.photoUrl.trim() !== "") {
-        if (!document.getElementById("userAvatarImg")) {
-          const img = document.createElement("img");
-          img.id = "userAvatarImg";
-          img.src = profile.photoUrl.trim();
-          img.alt = "Avatar";
-          img.className = "user__avatar";
-          userBtn.insertBefore(img, userBtn.firstChild);
-        }
+    // Si ya hay sesión, al mapa
+    (async function () {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        window.location.href = "mapa.html";
+        return;
       }
+      await applyUserHeader();
     })();
 
-    document.getElementById("createBtn").addEventListener("click", () => {
+    // Crear cuenta (Supabase)
+    document.getElementById("createBtn").addEventListener("click", async () => {
       const email = (emailEl.value || "").trim().toLowerCase();
       const password = passEl.value || "";
 
       if (!email.includes("@")) return setMsg("Email no válido.", true);
-      if (password.length < 4) return setMsg("Contraseña muy corta (mínimo 4).", true);
+      if (password.length < 6) return setMsg("Contraseña muy corta (mínimo 6).", true);
 
-      const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
-      if (accounts.some(a => a.email === email)) {
-        return setMsg("Ese usuario ya existe.", true);
-      }
+      setMsg("Creando cuenta...");
 
-      accounts.push({ email, password });
-      localStorage.setItem("accounts", JSON.stringify(accounts));
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) return setMsg("Error: " + error.message, true);
 
-      // Iniciar sesión automáticamente
-      localStorage.setItem("currentUserEmail", email);
-
-      setMsg("Cuenta creada. Entrando al mapa...");
-      setTimeout(() => window.location.href = "mapa.html", 400);
+      setMsg("Cuenta creada. Revisa tu email si te pide confirmación y luego inicia sesión.");
+      setTimeout(() => window.location.href = "login.html", 900);
     });
   </script>
 
 </body>
+
 </html>

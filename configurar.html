@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Configurar Usuario</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 
 <body>
@@ -21,6 +22,12 @@
         <a class="nav__link" href="index.html">Principal</a>
         <a class="nav__link" href="mapa.html">Mapa</a>
       </nav>
+
+      <div class="user">
+        <a class="user__btn" href="configurar.html" id="userBtn">
+          <span class="user__text" id="userText">Cuenta</span>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -29,9 +36,7 @@
     <div class="auth-card">
 
       <h1 class="auth-title">⚙️ Configurar Usuario</h1>
-      <p class="auth-subtitle">
-        Personaliza tu perfil (modo local).
-      </p>
+      <p class="auth-subtitle">Perfil online con Supabase.</p>
 
       <div class="form">
 
@@ -40,7 +45,7 @@
         <input class="input" id="emailField" type="text" disabled />
 
         <!-- Nombre visible -->
-        <label><b>Nombre visible</b></label>
+        <label><b>Nombre visible (opcional)</b></label>
         <input class="input" id="displayName" type="text" placeholder="Tu nombre público" />
 
         <!-- Foto -->
@@ -57,6 +62,17 @@
           <a class="btn btn--ghost" href="index.html">Volver</a>
         </div>
 
+        <hr style="border:0;height:1px;background:rgba(17,119,204,0.12);margin:14px 0;">
+
+        <!-- Cambiar contraseña -->
+        <label><b>Nueva contraseña</b></label>
+        <input class="input" id="newPass" type="password" placeholder="Mínimo 6 caracteres" />
+        <button class="btn btn--ghost" id="passBtn" type="button" style="margin-top:10px;">Cambiar contraseña</button>
+
+        <hr style="border:0;height:1px;background:rgba(17,119,204,0.12);margin:14px 0;">
+
+        <button class="btn btn--danger" id="logoutBtn" type="button">Cerrar sesión</button>
+
         <p class="note" id="msg"></p>
 
       </div>
@@ -68,56 +84,105 @@
     <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
   </footer>
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-
-    const current = localStorage.getItem("currentUserEmail");
-    if (!current) {
-      window.location.href = "login.html";
-    }
 
     const emailField = document.getElementById("emailField");
     const nameInput = document.getElementById("displayName");
     const photoInput = document.getElementById("photoUrl");
     const preview = document.getElementById("photoPreview");
     const msg = document.getElementById("msg");
+    const newPass = document.getElementById("newPass");
+    const userText = document.getElementById("userText");
 
-    emailField.value = current;
-
-    const profileKey = `profile:${current}`;
-    const savedProfile = JSON.parse(localStorage.getItem(profileKey)) || {};
-
-    if (savedProfile.displayName) nameInput.value = savedProfile.displayName;
-    if (savedProfile.photoUrl) {
-      photoInput.value = savedProfile.photoUrl;
-      preview.src = savedProfile.photoUrl;
-      preview.style.display = "block";
+    function setMsg(text, isError=false){
+      msg.textContent = text;
+      msg.style.color = isError ? "#7a1b3b" : "#1177cc";
+      msg.style.fontWeight = "900";
     }
 
-    photoInput.addEventListener("input", () => {
-      const url = photoInput.value.trim();
-      if (url) {
-        preview.src = url;
+    function refreshPreview(url){
+      const u = (url || "").trim();
+      if (u) {
+        preview.src = u;
         preview.style.display = "block";
       } else {
         preview.style.display = "none";
+        preview.src = "";
       }
+    }
+
+    // Cargar usuario (si no hay sesión -> login)
+    (async function init(){
+      const { data, error } = await supabase.auth.getUser();
+      const user = data?.user;
+
+      if (error || !user){
+        window.location.href = "login.html";
+        return;
+      }
+
+      emailField.value = user.email || "";
+
+      const displayName = (user.user_metadata?.display_name || "").trim();
+      const photoUrl = (user.user_metadata?.photo_url || "").trim();
+
+      nameInput.value = displayName;
+      photoInput.value = photoUrl;
+      refreshPreview(photoUrl);
+
+      userText.textContent = displayName || user.email;
+    })();
+
+    photoInput.addEventListener("input", () => refreshPreview(photoInput.value));
+
+    // Guardar nombre + foto en metadata
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const displayName = (nameInput.value || "").trim();
+      const photoUrl = (photoInput.value || "").trim();
+
+      setMsg("Guardando...");
+
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          display_name: displayName,
+          photo_url: photoUrl
+        }
+      });
+
+      if (error) return setMsg("Error: " + error.message, true);
+
+      refreshPreview(photoUrl);
+      setMsg("Perfil guardado correctamente ✅");
+
+      // Actualiza el header
+      const { data } = await supabase.auth.getUser();
+      const u = data?.user;
+      if (u) userText.textContent = (u.user_metadata?.display_name || "").trim() || u.email;
     });
 
-    document.getElementById("saveBtn").addEventListener("click", () => {
-      const displayName = nameInput.value.trim();
-      const photoUrl = photoInput.value.trim();
+    // Cambiar contraseña
+    document.getElementById("passBtn").addEventListener("click", async () => {
+      const pass = newPass.value || "";
+      if (pass.length < 6) return setMsg("La contraseña debe tener mínimo 6 caracteres.", true);
 
-      const profileData = {
-        displayName,
-        photoUrl
-      };
+      setMsg("Cambiando contraseña...");
 
-      localStorage.setItem(profileKey, JSON.stringify(profileData));
+      const { error } = await supabase.auth.updateUser({ password: pass });
+      if (error) return setMsg("Error: " + error.message, true);
 
-      msg.textContent = "Perfil guardado correctamente.";
-      msg.style.color = "#1177cc";
-      msg.style.fontWeight = "900";
+      newPass.value = "";
+      setMsg("Contraseña cambiada ✅");
+    });
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
     });
   </script>
 

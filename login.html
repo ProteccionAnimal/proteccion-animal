@@ -34,7 +34,7 @@
   <main class="auth-wrap">
     <div class="auth-card">
       <h1 class="auth-title">Inicia sesión</h1>
-      <p class="auth-subtitle">Modo local. Si no tienes cuenta, crea una.</p>
+      <p class="auth-subtitle">Con Supabase. Si no tienes cuenta, crea una.</p>
 
       <div class="form">
         <input class="input" id="email" type="email" placeholder="Email" autocomplete="email" />
@@ -50,10 +50,13 @@
     </div>
   </main>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
   </footer>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -68,76 +71,56 @@
       msgEl.style.fontWeight = "900";
     }
 
-    // ===============================
-    // ✅ HEADER DINÁMICO (nombre visible o correo)
-    // ===============================
-    (function applyUserHeader() {
-      const current = localStorage.getItem("currentUserEmail");
+    // Header dinámico (display_name > email)
+    async function applyUserHeader() {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+
       const userText = document.getElementById("userText");
       const userBtn = document.getElementById("userBtn");
-
       if (!userText || !userBtn) return;
 
-      // Sin sesión
-      if (!current) {
+      if (!user) {
         userText.textContent = "Login";
         userBtn.href = "login.html";
         return;
       }
 
-      // Con sesión
-      const profileKey = `profile:${current}`;
-      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
+      const displayName = (user.user_metadata?.display_name || "").trim();
+      userText.textContent = displayName || user.email || "Cuenta";
+      userBtn.href = "mapa.html";
+    }
 
-      const displayName = (profile.displayName && profile.displayName.trim() !== "")
-        ? profile.displayName.trim()
-        : current;
-
-      userText.textContent = displayName;
-
-      // Avatar opcional
-      if (profile.photoUrl && profile.photoUrl.trim() !== "") {
-        if (!document.getElementById("userAvatarImg")) {
-          const img = document.createElement("img");
-          img.id = "userAvatarImg";
-          img.src = profile.photoUrl.trim();
-          img.alt = "Avatar";
-          img.className = "user__avatar";
-          userBtn.insertBefore(img, userBtn.firstChild);
-        }
+    // Si ya hay sesión -> mapa
+    (async function () {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        window.location.href = "mapa.html";
+        return;
       }
+      await applyUserHeader();
     })();
 
-    // ===============================
-    // CREAR CUENTA
-    // ===============================
+    // Crear cuenta
     document.getElementById("signupBtn").addEventListener("click", () => {
       window.location.href = "crear-cuenta.html";
     });
 
-    // ===============================
-    // LOGIN LOCAL
-    // ===============================
-    document.getElementById("loginBtn").addEventListener("click", () => {
+    // Login
+    document.getElementById("loginBtn").addEventListener("click", async () => {
       const email = (emailEl.value || "").trim().toLowerCase();
       const password = passEl.value || "";
 
       if (!email.includes("@")) return setMsg("Email no válido.", true);
+      if (password.length < 6) return setMsg("Contraseña muy corta (mínimo 6).", true);
 
-      const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
-      const ok = accounts.find(a => a.email === email && a.password === password);
+      setMsg("Entrando...");
 
-      if (!ok) return setMsg("Email o contraseña incorrectos.", true);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return setMsg("Error: " + error.message, true);
 
-      localStorage.setItem("currentUserEmail", email);
       window.location.href = "mapa.html";
     });
-
-    // Si ya hay sesión, al mapa
-    (function () {
-      const current = localStorage.getItem("currentUserEmail");
-      if (current) window.location.href = "mapa.html";
-    })();
   </script>
 
 </body>
