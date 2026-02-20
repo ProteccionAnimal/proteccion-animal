@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proteccion Animal - Inicio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="index.html">
+        <span class="brand__dot"></span>
+        <span class="brand__text">Proteccion Animal</span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav__link" href="index.html">Principal</a>
+        <a class="nav__link" href="mapa.html">Mapa</a>
+      </nav>
+
+      <div class="user">
+        <a class="user__btn" href="login.html" id="userBtn">
+          <span class="user__text" id="userText">Login</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Crear cuenta</h1>
+      <p class="auth-subtitle">Modo local (solo para pruebas). Luego lo pasamos a Supabase.</p>
+
+      <div class="form">
+        <input class="input" id="email" type="email" placeholder="Email" autocomplete="email" />
+        <input class="input" id="password" type="password" placeholder="Contraseña" autocomplete="new-password" />
+
+        <div class="form-row">
+          <button class="btn btn--primary" id="createBtn" type="button">Crear cuenta</button>
+          <a class="btn btn--ghost" href="login.html">Ya tengo cuenta</a>
+        </div>
+
+        <p class="note" id="msg"></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
+  </footer>
+
+  <script>
+    // Año footer (si quieres)
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const msgEl = document.getElementById("msg");
+
+    function setMsg(t, err = false) {
+      msgEl.textContent = t;
+      msgEl.style.color = err ? "#7a1b3b" : "#1177cc";
+      msgEl.style.fontWeight = "900";
+    }
+
+    // ✅ HEADER: mostrar nombre visible si existe, si no correo, si no sesión -> Login
+    (function applyUserHeader() {
+      const current = localStorage.getItem("currentUserEmail");
+      const userText = document.getElementById("userText");
+      const userBtn = document.getElementById("userBtn");
+      if (!userText || !userBtn) return;
+
+      // Sin sesión
+      if (!current) {
+        userText.textContent = "Login";
+        userBtn.href = "login.html";
+        return;
+      }
+
+      // Con sesión -> perfil
+      const profileKey = `profile:${current}`;
+      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
+
+      const displayName = (profile.displayName && profile.displayName.trim() !== "")
+        ? profile.displayName.trim()
+        : current;
+
+      userText.textContent = displayName;
+
+      // Si quieres: si tiene foto, pon avatar (requiere CSS .user__avatar)
+      if (profile.photoUrl && profile.photoUrl.trim() !== "") {
+        if (!document.getElementById("userAvatarImg")) {
+          const img = document.createElement("img");
+          img.id = "userAvatarImg";
+          img.src = profile.photoUrl.trim();
+          img.alt = "Avatar";
+          img.className = "user__avatar";
+          userBtn.insertBefore(img, userBtn.firstChild);
+        }
+      }
+    })();
+
+    document.getElementById("createBtn").addEventListener("click", () => {
+      const email = (emailEl.value || "").trim().toLowerCase();
+      const password = passEl.value || "";
+
+      if (!email.includes("@")) return setMsg("Email no válido.", true);
+      if (password.length < 4) return setMsg("Contraseña muy corta (mínimo 4).", true);
+
+      const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+      if (accounts.some(a => a.email === email)) {
+        return setMsg("Ese usuario ya existe.", true);
+      }
+
+      accounts.push({ email, password });
+      localStorage.setItem("accounts", JSON.stringify(accounts));
+
+      // Iniciar sesión automáticamente
+      localStorage.setItem("currentUserEmail", email);
+
+      setMsg("Cuenta creada. Entrando al mapa...");
+      setTimeout(() => window.location.href = "mapa.html", 400);
+    });
+  </script>
+
+</body>
+</html>

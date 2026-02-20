@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurar Usuario</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="index.html">
+        <span class="brand__dot"></span>
+        <span class="brand__text">Proteccion Animal</span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav__link" href="index.html">Principal</a>
+        <a class="nav__link" href="mapa.html">Mapa</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="auth-wrap">
+    <div class="auth-card">
+
+      <h1 class="auth-title">⚙️ Configurar Usuario</h1>
+      <p class="auth-subtitle">
+        Personaliza tu perfil (modo local).
+      </p>
+
+      <div class="form">
+
+        <!-- Email -->
+        <label><b>Email</b></label>
+        <input class="input" id="emailField" type="text" disabled />
+
+        <!-- Nombre visible -->
+        <label><b>Nombre visible</b></label>
+        <input class="input" id="displayName" type="text" placeholder="Tu nombre público" />
+
+        <!-- Foto -->
+        <label><b>Foto de perfil (URL)</b></label>
+        <input class="input" id="photoUrl" type="text" placeholder="https://..." />
+
+        <!-- Preview -->
+        <div style="text-align:center;margin-top:10px;">
+          <img id="photoPreview" src="" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #25b7ff;display:none;">
+        </div>
+
+        <div class="form-row" style="margin-top:15px;">
+          <button class="btn btn--primary" id="saveBtn" type="button">Guardar cambios</button>
+          <a class="btn btn--ghost" href="index.html">Volver</a>
+        </div>
+
+        <p class="note" id="msg"></p>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const current = localStorage.getItem("currentUserEmail");
+    if (!current) {
+      window.location.href = "login.html";
+    }
+
+    const emailField = document.getElementById("emailField");
+    const nameInput = document.getElementById("displayName");
+    const photoInput = document.getElementById("photoUrl");
+    const preview = document.getElementById("photoPreview");
+    const msg = document.getElementById("msg");
+
+    emailField.value = current;
+
+    const profileKey = `profile:${current}`;
+    const savedProfile = JSON.parse(localStorage.getItem(profileKey)) || {};
+
+    if (savedProfile.displayName) nameInput.value = savedProfile.displayName;
+    if (savedProfile.photoUrl) {
+      photoInput.value = savedProfile.photoUrl;
+      preview.src = savedProfile.photoUrl;
+      preview.style.display = "block";
+    }
+
+    photoInput.addEventListener("input", () => {
+      const url = photoInput.value.trim();
+      if (url) {
+        preview.src = url;
+        preview.style.display = "block";
+      } else {
+        preview.style.display = "none";
+      }
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const displayName = nameInput.value.trim();
+      const photoUrl = photoInput.value.trim();
+
+      const profileData = {
+        displayName,
+        photoUrl
+      };
+
+      localStorage.setItem(profileKey, JSON.stringify(profileData));
+
+      msg.textContent = "Perfil guardado correctamente.";
+      msg.style.color = "#1177cc";
+      msg.style.fontWeight = "900";
+    });
+  </script>
+
+</body>
+</html>

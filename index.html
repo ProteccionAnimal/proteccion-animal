@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proteccion Animal - Inicio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+
+  <!-- HEADER / NAV -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="index.html" aria-label="Ir a la página principal">
+        <span class="brand__dot"></span>
+        <span class="brand__text">Proteccion Animal</span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav__link nav__link--active" href="index.html">Principal</a>
+        <a class="nav__link" href="mapa.html">Mapa</a>
+      </nav>
+
+      <!-- ✅ USER con dropdown -->
+      <div class="user user--menu" id="userMenuWrap">
+        <a class="user__btn" href="login.html" id="userBtn" title="Cuenta" aria-label="Cuenta">
+          <svg class="user__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5Z"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M4 22c0-4.42 3.58-8 8-8s8 3.58 8 8"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="user__text" id="userText">Login</span>
+        </a>
+
+        <!-- Dropdown -->
+        <div class="user-dropdown" id="userDropdown" aria-label="Menú usuario">
+          <a class="user-dropdown__item" href="configurar.html" id="configUserBtn">⚙️ Configurar usuario</a>
+          <button class="user-dropdown__item user-dropdown__danger" type="button" id="logoutBtn">🚪 Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ✅ WRAPPER (PASO 1) -->
+  <div class="layout">
+
+    <!-- MAIN -->
+    <main class="page">
+      <section class="hero">
+        <div class="hero__content">
+          <h1 class="hero__title">Bienvenido/a 👋</h1>
+          <p class="hero__subtitle">
+            Guarda lugares en tu mapa personal. Solo tú podrás verlos… y si quieres, también podrás compartirlos
+            con otros usuarios.
+          </p>
+
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="mapa.html">Ir al Mapa</a>
+            <a class="btn btn--ghost" href="login.html">Iniciar sesión</a>
+          </div>
+
+          <div class="hero__badges">
+            <div class="badge">🔒 Privado por usuario</div>
+            <div class="badge">🤝 Compartir por invitación</div>
+            <div class="badge">🗺️ Leaflet + OpenStreetMap</div>
+          </div>
+        </div>
+
+        <div class="hero__card">
+          <div class="card">
+            <div class="card__top">
+              <div class="chip chip--blue">Nuevo</div>
+              <div class="chip chip--green">Seguro</div>
+            </div>
+
+            <h2 class="card__title">Tu mapa, tuyo</h2>
+
+            <p class="card__text">
+              Cada marcador se guarda en tu navegador (modo local) y se asocia a tu cuenta.
+            </p>
+
+            <!-- ✅ CONTADORES -->
+            <div class="card__stats" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+              <div class="badge" style="font-weight:900;">
+                🔴 Voluntarios: <span id="volCountHome">0</span>
+              </div>
+              <div class="badge" style="font-weight:900;">
+                🟢 Puntos: <span id="foodCountHome">0</span>
+              </div>
+            </div>
+
+            <div class="card__lines">
+              <div class="line"></div>
+              <div class="line line--short"></div>
+            </div>
+
+            <a class="card__link" href="mapa.html">Empezar →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL COMPARTIDOS -->
+      <section class="panel" style="margin-top:14px;">
+        <h3>Usuarios con los que compartes el mapa</h3>
+        <p class="note" id="shareHint">Inicia sesión para ver tu lista de compartidos.</p>
+
+        <ul id="sharedList" style="margin:10px 0 0; padding-left:18px;"></ul>
+
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn btn--primary" href="mapa.html">Ir al mapa</a>
+          <a class="btn btn--ghost" href="login.html">Login</a>
+          <a class="btn btn--ghost" href="crear-cuenta.html">Crear cuenta</a>
+        </div>
+      </section>
+
+      <!-- ✅ PANEL MINI (NO GIGANTE) -->
+      <section class="panel" style="margin-top:14px;">
+        <div class="panel-head">
+          <h3 style="margin:0;">🟢 Puntos de alimentación</h3>
+          <span class="panel-badge" id="fpSummary">—</span>
+        </div>
+
+        <p class="note" id="fpHint">Inicia sesión para ver los puntos.</p>
+
+        <!-- Lista mini (compacta) -->
+        <div class="mini-list" id="fpMiniList"></div>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h3>1) Crea tus lugares</h3>
+          <p>Haz clic en el mapa y elige voluntario o punto de alimentación.</p>
+        </article>
+        <article class="panel">
+          <h3>2) Se guardan en tu cuenta</h3>
+          <p>Se guardan asociados a tu usuario en este navegador.</p>
+        </article>
+        <article class="panel">
+          <h3>3) Comparte si quieres</h3>
+          <p>Invita a otro usuario para que vea tu mapa.</p>
+        </article>
+      </section>
+    </main>
+
+    <!-- ✅ MODAL (POPUP) para gestionar un punto -->
+    <div class="modal" id="fpModal" aria-hidden="true">
+      <div class="modal__backdrop" id="fpModalCloseBg"></div>
+
+      <div class="modal__card" role="dialog" aria-modal="true" aria-label="Gestionar punto de alimentación">
+        <div class="modal__head">
+          <div>
+            <div class="modal__title" id="fpModalTitle">Punto</div>
+            <div class="modal__subtitle" id="fpModalSub">—</div>
+          </div>
+          <button class="modal__close" id="fpModalCloseBtn" type="button">✖</button>
+        </div>
+
+        <div class="modal__body">
+          <div class="modal__grid">
+            <div class="modal__box">
+              <div class="modal__boxTitle">Voluntarios asignados</div>
+              <div class="mini-list" id="fpAssignedList"></div>
+            </div>
+
+            <div class="modal__box">
+              <div class="modal__boxTitle">Voluntarios disponibles</div>
+              <div class="mini-list" id="fpAvailableList"></div>
+            </div>
+          </div>
+
+          <p class="note" style="margin-top:10px;">
+            * Se guarda en localStorage. En el mapa, al clicar un voluntario, verás a qué punto pertenece.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>© <span id="year"></span></p>
+    </footer>
+
+  </div><!-- ✅ FIN layout -->
+
+  <!-- SCRIPTS -->
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // =============================
+    // Helpers
+    // =============================
+    function fpIdFromLatLng(lat, lng) {
+      const a = Number(lat).toFixed(6);
+      const b = Number(lng).toFixed(6);
+      return `fp:${a}:${b}`;
+    }
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[m]));
+    }
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/`/g, "&#096;");
+    }
+
+    // =============================
+    // ✅ PANEL MINI + MODAL
+    // =============================
+    const fpMiniList = document.getElementById("fpMiniList");
+    const fpHint = document.getElementById("fpHint");
+    const fpSummary = document.getElementById("fpSummary");
+
+    const fpModal = document.getElementById("fpModal");
+    const fpModalCloseBtn = document.getElementById("fpModalCloseBtn");
+    const fpModalCloseBg = document.getElementById("fpModalCloseBg");
+    const fpModalTitle = document.getElementById("fpModalTitle");
+    const fpModalSub = document.getElementById("fpModalSub");
+    const fpAssignedList = document.getElementById("fpAssignedList");
+    const fpAvailableList = document.getElementById("fpAvailableList");
+
+    function closeFpModal() {
+      fpModal.classList.remove("open");
+      fpModal.setAttribute("aria-hidden", "true");
+    }
+    fpModalCloseBtn.addEventListener("click", closeFpModal);
+    fpModalCloseBg.addEventListener("click", closeFpModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && fpModal.classList.contains("open")) closeFpModal();
+    });
+
+    function renderMiniFoodPoints(foodPoints, volunteers) {
+      if (!fpMiniList) return;
+
+      const MAX = 4;
+      const shown = foodPoints.slice(0, MAX);
+
+      if (foodPoints.length === 0) {
+        fpMiniList.innerHTML = `<div class="note">No hay puntos todavía.</div>`;
+        return;
+      }
+
+      fpMiniList.innerHTML = shown.map(fp => {
+        const assignedCount = volunteers.filter(v => (v.foodPointId || "") === fp.fpId).length;
+
+        return `
+          <div class="mini-row">
+            <div class="mini-left">
+              <div class="mini-title">🟢 ${escapeHtml(fp.name || "Punto de alimentación")}</div>
+              <div class="mini-sub">🔴 ${assignedCount} voluntarios</div>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" type="button" data-fp="${escapeAttr(fp.fpId)}">Gestionar</button>
+            </div>
+          </div>
+        `;
+      }).join("") + (foodPoints.length > MAX ? `
+        <div class="note">Mostrando ${MAX} de ${foodPoints.length}. Pulsa “Gestionar” para ver más.</div>
+      ` : "");
+
+      fpMiniList.querySelectorAll("button[data-fp]").forEach(btn => {
+        btn.addEventListener("click", () => openFpModal(btn.getAttribute("data-fp")));
+      });
+    }
+
+    function setVolunteerFoodPoint(lat, lng, fpId) {
+      const current = localStorage.getItem("currentUserEmail");
+      if (!current) return;
+
+      const markersKey = `markerLocations:${current}`;
+      const markers = JSON.parse(localStorage.getItem(markersKey)) || [];
+
+      const tLat = Number(lat);
+      const tLng = Number(lng);
+
+      let changed = false;
+      markers.forEach(m => {
+        if (m.type === "Voluntario" && Number(m.lat) === tLat && Number(m.lng) === tLng) {
+          m.foodPointId = fpId;
+          changed = true;
+        }
+      });
+
+      if (changed) localStorage.setItem(markersKey, JSON.stringify(markers));
+    }
+
+    function refreshMiniIndex() {
+      const current = localStorage.getItem("currentUserEmail");
+      if (!current) return;
+
+      const markersKey = `markerLocations:${current}`;
+      const markers = JSON.parse(localStorage.getItem(markersKey)) || [];
+
+      let changed = false;
+      markers.forEach(m => {
+        if (m.type === "Punto de alimentación" && !m.fpId) { m.fpId = fpIdFromLatLng(m.lat, m.lng); changed = true; }
+        if (m.type === "Voluntario" && typeof m.foodPointId === "undefined") { m.foodPointId = ""; changed = true; }
+      });
+      if (changed) localStorage.setItem(markersKey, JSON.stringify(markers));
+
+      const foodPoints = markers.filter(m => m.type === "Punto de alimentación");
+      const volunteers = markers.filter(m => m.type === "Voluntario");
+
+      if (fpSummary) fpSummary.textContent = `🟢 ${foodPoints.length} · 🔴 ${volunteers.length}`;
+      renderMiniFoodPoints(foodPoints, volunteers);
+    }
+
+    function openFpModal(fpId) {
+      const current = localStorage.getItem("currentUserEmail");
+      if (!current) return;
+
+      const markersKey = `markerLocations:${current}`;
+      const markers = JSON.parse(localStorage.getItem(markersKey)) || [];
+
+      const foodPoints = markers.filter(m => m.type === "Punto de alimentación");
+      const volunteers = markers.filter(m => m.type === "Voluntario");
+
+      const fp = foodPoints.find(p => p.fpId === fpId);
+      if (!fp) return;
+
+      fpModalTitle.textContent = `🟢 ${fp.name || "Punto de alimentación"}`;
+      fpModalSub.textContent = fp.description ? fp.description : "Gestiona voluntarios de este punto";
+
+      const assigned = volunteers.filter(v => (v.foodPointId || "") === fpId);
+      fpAssignedList.innerHTML = assigned.length ? assigned.map(v => `
+        <div class="mini-row">
+          <div class="mini-left">
+            <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
+            <div class="mini-sub">${escapeHtml(v.description || "")}</div>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn danger" type="button" data-unassign="${escapeAttr(v.lat)}|${escapeAttr(v.lng)}">Quitar</button>
+          </div>
+        </div>
+      `).join("") : `<div class="note">No hay voluntarios asignados.</div>`;
+
+      const available = volunteers.filter(v => (v.foodPointId || "") !== fpId);
+      fpAvailableList.innerHTML = available.length ? available.map(v => `
+        <div class="mini-row">
+          <div class="mini-left">
+            <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
+            <div class="mini-sub">${escapeHtml(v.foodPointId ? "Asignado a otro punto" : "Sin asignar")}</div>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" type="button" data-assign="${escapeAttr(v.lat)}|${escapeAttr(v.lng)}">Asignar</button>
+          </div>
+        </div>
+      `).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
+
+      fpAssignedList.querySelectorAll("button[data-unassign]").forEach(b => {
+        b.addEventListener("click", () => {
+          const [lat, lng] = b.getAttribute("data-unassign").split("|");
+          setVolunteerFoodPoint(lat, lng, "");
+          openFpModal(fpId);
+          refreshMiniIndex();
+        });
+      });
+
+      fpAvailableList.querySelectorAll("button[data-assign]").forEach(b => {
+        b.addEventListener("click", () => {
+          const [lat, lng] = b.getAttribute("data-assign").split("|");
+          setVolunteerFoodPoint(lat, lng, fpId);
+          openFpModal(fpId);
+          refreshMiniIndex();
+        });
+      });
+
+      fpModal.classList.add("open");
+      fpModal.setAttribute("aria-hidden", "false");
+    }
+
+    // =============================
+    // Script principal (TU lógica)
+    // =============================
+    (function () {
+      const current = localStorage.getItem("currentUserEmail");
+
+      const userText = document.getElementById("userText");
+      const userBtn = document.getElementById("userBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const wrap = document.getElementById("userMenuWrap");
+      const dropdown = document.getElementById("userDropdown");
+
+      const volEl = document.getElementById("volCountHome");
+      const foodEl = document.getElementById("foodCountHome");
+      const hint = document.getElementById("shareHint");
+      const listEl = document.getElementById("sharedList");
+
+      if (!current) {
+        userText.textContent = "Login";
+        userBtn.href = "login.html";
+        dropdown.style.display = "none";
+
+        if (fpHint) fpHint.textContent = "Inicia sesión para ver y gestionar puntos.";
+        if (fpSummary) fpSummary.textContent = "—";
+        if (fpMiniList) fpMiniList.innerHTML = "";
+        return;
+      }
+
+      const profileKey = `profile:${current}`;
+      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
+      const displayName = (profile.displayName && profile.displayName.trim() !== "") ? profile.displayName.trim() : current;
+
+      userText.textContent = displayName;
+      userBtn.href = "#";
+
+      userBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        wrap.classList.toggle("open");
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("currentUserEmail");
+        window.location.reload();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) wrap.classList.remove("open");
+      });
+
+      hint.textContent = "Sesión: " + current;
+
+      const markersKey = `markerLocations:${current}`;
+      const markers = JSON.parse(localStorage.getItem(markersKey)) || [];
+
+      let changed = false;
+      markers.forEach(m => {
+        if (m.type === "Punto de alimentación" && !m.fpId) { m.fpId = fpIdFromLatLng(m.lat, m.lng); changed = true; }
+        if (m.type === "Voluntario" && typeof m.foodPointId === "undefined") { m.foodPointId = ""; changed = true; }
+      });
+      if (changed) localStorage.setItem(markersKey, JSON.stringify(markers));
+
+      const volunteersCount = markers.filter(m => m.type === "Voluntario").length;
+      const foodPointsCount = markers.filter(m => m.type === "Punto de alimentación").length;
+
+      volEl.textContent = volunteersCount;
+      foodEl.textContent = foodPointsCount;
+
+      const sharesKey = `shares:${current}`;
+      const shared = JSON.parse(localStorage.getItem(sharesKey)) || [];
+
+      if (shared.length === 0) {
+        listEl.innerHTML = "<li>No has compartido el mapa con nadie todavía.</li>";
+      } else {
+        listEl.innerHTML = shared.map(e => `<li><b>${escapeHtml(e)}</b></li>`).join("");
+      }
+
+      const foodPoints = markers.filter(m => m.type === "Punto de alimentación");
+      const volunteers = markers.filter(m => m.type === "Voluntario");
+
+      if (fpHint) fpHint.textContent = foodPoints.length
+        ? "Pulsa “Gestionar” para asignar voluntarios."
+        : "Aún no tienes puntos de alimentación creados en el mapa.";
+
+      if (fpSummary) fpSummary.textContent = `🟢 ${foodPoints.length} · 🔴 ${volunteers.length}`;
+      renderMiniFoodPoints(foodPoints, volunteers);
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proteccion Animal - Login</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="index.html">
+        <span class="brand__dot"></span>
+        <span class="brand__text">Proteccion Animal</span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav__link" href="index.html">Principal</a>
+        <a class="nav__link" href="mapa.html">Mapa</a>
+      </nav>
+
+      <div class="user">
+        <a class="user__btn" href="login.html" id="userBtn">
+          <span class="user__text" id="userText">Login</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Inicia sesión</h1>
+      <p class="auth-subtitle">Modo local. Si no tienes cuenta, crea una.</p>
+
+      <div class="form">
+        <input class="input" id="email" type="email" placeholder="Email" autocomplete="email" />
+        <input class="input" id="password" type="password" placeholder="Contraseña" autocomplete="current-password" />
+
+        <div class="form-row">
+          <button class="btn btn--primary" id="loginBtn" type="button">Entrar</button>
+          <button class="btn btn--ghost" id="signupBtn" type="button">Crear cuenta</button>
+        </div>
+
+        <p class="note" id="msg"></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const msgEl = document.getElementById("msg");
+
+    function setMsg(text, isError = false) {
+      msgEl.textContent = text;
+      msgEl.style.color = isError ? "#7a1b3b" : "#1177cc";
+      msgEl.style.fontWeight = "900";
+    }
+
+    // ===============================
+    // ✅ HEADER DINÁMICO (nombre visible o correo)
+    // ===============================
+    (function applyUserHeader() {
+      const current = localStorage.getItem("currentUserEmail");
+      const userText = document.getElementById("userText");
+      const userBtn = document.getElementById("userBtn");
+
+      if (!userText || !userBtn) return;
+
+      // Sin sesión
+      if (!current) {
+        userText.textContent = "Login";
+        userBtn.href = "login.html";
+        return;
+      }
+
+      // Con sesión
+      const profileKey = `profile:${current}`;
+      const profile = JSON.parse(localStorage.getItem(profileKey)) || {};
+
+      const displayName = (profile.displayName && profile.displayName.trim() !== "")
+        ? profile.displayName.trim()
+        : current;
+
+      userText.textContent = displayName;
+
+      // Avatar opcional
+      if (profile.photoUrl && profile.photoUrl.trim() !== "") {
+        if (!document.getElementById("userAvatarImg")) {
+          const img = document.createElement("img");
+          img.id = "userAvatarImg";
+          img.src = profile.photoUrl.trim();
+          img.alt = "Avatar";
+          img.className = "user__avatar";
+          userBtn.insertBefore(img, userBtn.firstChild);
+        }
+      }
+    })();
+
+    // ===============================
+    // CREAR CUENTA
+    // ===============================
+    document.getElementById("signupBtn").addEventListener("click", () => {
+      window.location.href = "crear-cuenta.html";
+    });
+
+    // ===============================
+    // LOGIN LOCAL
+    // ===============================
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = (emailEl.value || "").trim().toLowerCase();
+      const password = passEl.value || "";
+
+      if (!email.includes("@")) return setMsg("Email no válido.", true);
+
+      const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+      const ok = accounts.find(a => a.email === email && a.password === password);
+
+      if (!ok) return setMsg("Email o contraseña incorrectos.", true);
+
+      localStorage.setItem("currentUserEmail", email);
+      window.location.href = "mapa.html";
+    });
+
+    // Si ya hay sesión, al mapa
+    (function () {
+      const current = localStorage.getItem("currentUserEmail");
+      if (current) window.location.href = "mapa.html";
+    })();
+  </script>
+
+</body>
+</html>
