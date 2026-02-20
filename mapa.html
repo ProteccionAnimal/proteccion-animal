@@ -11,52 +11,125 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <style>
-    .map-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; width: 100%; }
-    .map-card { overflow: hidden; border-radius: 18px; }
-    #map { width: 100%; height: 78vh; min-height: 520px; }
-    @media (max-width: 1024px) { #map { height: 70vh; min-height: 460px; } }
-    @media (max-width: 640px) { #map { height: 60vh; min-height: 360px; } }
+    /* Evita que algo “apriete” el mapa */
+    .map-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+      width: 100%;
+    }
 
-    .modal { position: fixed; inset: 0; display: none; z-index: 260000; }
-    .modal.open { display: block; }
-    .modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); }
-    .modal__card {
-      position: relative; max-width: 560px; width: calc(100% - 24px); margin: 70px auto 24px;
-      border-radius: 18px; background: rgba(255,255,255,0.92);
-      border: 1px solid rgba(17,119,204,0.18);
-      box-shadow: 0 24px 70px rgba(0,0,0,0.18);
+    .map-card {
       overflow: hidden;
+      border-radius: 18px;
     }
-    .modal__head {
-      padding: 14px 16px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-      border-bottom: 1px solid rgba(17,119,204,0.10);
-      background: rgba(234,246,255,0.65);
-    }
-    .modal__title { font-weight: 1000; font-size: 16px; }
-    .modal__subtitle { font-weight: 800; font-size: 12px; color: #4a6173; margin-top: 2px; }
-    .modal__close { cursor:pointer; border:none; background: rgba(255,255,255,0.9); border-radius: 12px; padding: 8px 10px; font-weight: 900; }
-    .modal__body { padding: 14px 16px 16px; }
 
-    /* ✅ Pantalla de carga (no rompe el layout) */
-    #loadingScreen {
+    /* ✅ MAPA: grande en PC (como “antes”) */
+    #map {
+      width: 100%;
+      height: 78vh;
+      min-height: 520px;
+    }
+
+    /* Tablet */
+    @media (max-width: 1024px) {
+      #map {
+        height: 70vh;
+        min-height: 460px;
+      }
+    }
+
+    /* Móvil */
+    @media (max-width: 640px) {
+      #map {
+        height: 60vh;
+        min-height: 360px;
+      }
+    }
+
+    /* ✅ Fallback por si tu styles.css no incluye modal */
+    .modal {
       position: fixed;
       inset: 0;
-      z-index: 999999;
+      display: none;
+      z-index: 260000;
+    }
+
+    .modal.open {
+      display: block;
+    }
+
+    .modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal__card {
+      position: relative;
+      max-width: 560px;
+      width: calc(100% - 24px);
+      margin: 70px auto 24px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(17, 119, 204, 0.18);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    .modal__head {
+      padding: 14px 16px;
       display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(17, 119, 204, 0.10);
+      background: rgba(234, 246, 255, 0.65);
+    }
+
+    .modal__title {
+      font-weight: 1000;
+      font-size: 16px;
+    }
+
+    .modal__subtitle {
+      font-weight: 800;
+      font-size: 12px;
+      color: #4a6173;
+      margin-top: 2px;
+    }
+
+    .modal__close {
+      cursor: pointer;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-weight: 900;
+    }
+
+    .modal__body {
+      padding: 14px 16px 16px;
+    }
+
+    /* mini overlay de carga (no rompe el fondo) */
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(4px);
-      font-weight: 900;
+      z-index: 999999;
+      background: rgba(255,255,255,.25);
+      backdrop-filter: blur(2px);
+      font-weight: 1000;
       color: #1177cc;
     }
-    #loadingScreen.hidden { display: none; }
   </style>
 </head>
 
 <body>
-
-  <div id="loadingScreen">Cargando sesión…</div>
 
   <header class="topbar">
     <div class="topbar__inner">
@@ -70,7 +143,7 @@
         <a class="nav__link nav__link--active" href="mapa.html">Mapa</a>
       </nav>
 
-      <!-- ✅ Usuario: si hay sesión -> botón abre menú; si no -> login -->
+      <!-- ✅ USER con dropdown -->
       <div class="user user--menu" id="userMenuWrap">
         <a class="user__btn" href="login.html" id="userBtn" aria-label="Cuenta">
           <span class="user__text" id="userLabel">Login</span>
@@ -93,6 +166,7 @@
           <h2 class="map-title">Mapa - La Nucía</h2>
           <p class="map-subtitle">Doble click en el mapa para añadir voluntario o punto de alimentación.</p>
 
+          <!-- Botones arriba -->
           <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
             <button class="btn btn--primary" id="shareBtn" type="button">Compartir mapa</button>
             <button class="btn btn--ghost" id="searchVolunteerBtn" type="button">Voluntarios</button>
@@ -109,14 +183,18 @@
     </div>
   </main>
 
+  <!-- FOOTER -->
   <footer class="footer">
     <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
   </footer>
 
+  <!-- ✅ input oculto para foto desde archivos -->
   <input id="photoInput" type="file" accept="image/*" style="display:none;" />
 
+  <!-- ✅ MODAL foto -->
   <div id="photoModal" class="modal" aria-hidden="true">
     <div class="modal__backdrop" id="photoModalBg"></div>
+
     <div class="modal__card" role="dialog" aria-modal="true" aria-label="Añadir foto">
       <div class="modal__head">
         <div>
@@ -125,114 +203,118 @@
         </div>
         <button class="modal__close" id="photoModalClose" type="button">✖</button>
       </div>
+
       <div class="modal__body">
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn--primary" id="pickPhotoBtn" type="button">📷 Elegir archivo</button>
           <button class="btn btn--ghost" id="skipPhotoBtn" type="button">Omitir</button>
         </div>
-        <p class="note" style="margin-top:10px;">* Si cancelas el selector, se guardará sin foto.</p>
+
+        <p class="note" style="margin-top:10px;">
+          * Si cancelas el selector, se guardará sin foto.
+        </p>
       </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div id="loadingOverlay">Cargando…</div>
 
-  <script>
-    // ====== SUPABASE CONFIG ======
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- ✅ Supabase + lógica (MODULE) -->
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // =========================
+    // ✅ SUPABASE CONFIG (tus datos)
+    // =========================
     const SUPABASE_URL = "https://vkyusosabullpvudxafy.supabase.co";
     const SUPABASE_KEY = "sb_publishable_8JbsqfmoH05omWj1p2jPXg_EwZDntlT";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const BUCKET = "marker-photos";
-
-    const loading = document.getElementById("loadingScreen");
-    function hideLoading(){ loading.classList.add("hidden"); }
-    function showLoading(t){ loading.textContent = t || "Cargando…"; loading.classList.remove("hidden"); }
+    const BUCKET = "marker-photos"; // ✅ tu bucket real
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // ====== helpers ======
-    function fpIdFromLatLng(lat, lng) {
-      return `fp:${Number(lat).toFixed(6)}:${Number(lng).toFixed(6)}`;
-    }
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, (m) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-      }[m]));
-    }
-    function escapeAttr(str) { return escapeHtml(str).replace(/`/g, "&#096;"); }
-    function uuid() { return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ("id-" + Date.now() + "-" + Math.random().toString(16).slice(2)); }
+    const loading = document.getElementById("loadingOverlay");
+    const showLoading = (t = "Cargando…") => { loading.textContent = t; loading.style.display = "flex"; };
+    const hideLoading = () => { loading.style.display = "none"; };
 
-    // ====== estado ======
-    let currentUser = null;
-    let map = null;
-    let markerLocations = [];
-    const markersById = new Map();
-
-    // ====== header dropdown (solo abre menú) ======
-    function setupHeader(user) {
-      const userLabel = document.getElementById("userLabel");
-      const userBtn = document.getElementById("userBtn");
-      const logoutTopBtn = document.getElementById("logoutTopBtn");
-      const wrap = document.getElementById("userMenuWrap");
-
-      const displayName =
-        (user?.user_metadata?.display_name && String(user.user_metadata.display_name).trim() !== "")
-          ? String(user.user_metadata.display_name).trim()
-          : (user?.email || "Cuenta");
-
-      userLabel.textContent = displayName;
-
-      // ✅ si hay sesión: NO navegar, solo menú
-      userBtn.href = "#";
-      userBtn.onclick = (e) => { e.preventDefault(); wrap.classList.toggle("open"); };
-
-      document.addEventListener("click", (e) => {
-        if (!wrap.contains(e.target)) wrap.classList.remove("open");
-      });
-
-      logoutTopBtn.onclick = async () => {
-        await supabase.auth.signOut();
-        window.location.replace("login.html");
-      };
-    }
-
-    // ====== sesión obligatoria ======
+    // =========================
+    // ✅ AUTH: requiere login (sin quedarse colgado)
+    // =========================
     async function requireSessionOrRedirect() {
+      showLoading("Cargando sesión…");
       const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        alert("Error sesión: " + error.message);
-        window.location.replace("login.html");
-        return null;
-      }
+      if (error) throw error;
+
       const session = data?.session;
-      if (!session) {
+      if (!session?.user) {
         window.location.replace("login.html");
         return null;
       }
       return session.user;
     }
 
-    // ====== mapa ======
-    function initMap() {
-      map = L.map("map").setView([38.6140, -0.1266], 14);
+    const user = await requireSessionOrRedirect();
+    if (!user) throw new Error("No session");
 
-      const normal = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors"
+    // =============================
+    // ✅ USER TOPBAR (dropdown) con Supabase
+    // - click NO navega, solo abre menú
+    // =============================
+    (function () {
+      const userLabel = document.getElementById("userLabel");
+      const userBtn = document.getElementById("userBtn");
+      const logoutTopBtn = document.getElementById("logoutTopBtn");
+      const wrap = document.getElementById("userMenuWrap");
+
+      const displayName =
+        (user.user_metadata?.display_name && String(user.user_metadata.display_name).trim() !== "")
+          ? String(user.user_metadata.display_name).trim()
+          : (user.email || "Cuenta");
+
+      userLabel.textContent = displayName;
+
+      userBtn.href = "#";
+      userBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        wrap.classList.toggle("open");
       });
 
-      const satellite = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Tiles © Esri" }
-      );
+      logoutTopBtn.addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.replace("login.html");
+      });
 
-      normal.addTo(map);
-      L.control.layers({ "Mapa normal": normal, "Satélite": satellite }).addTo(map);
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) wrap.classList.remove("open");
+      });
+    })();
 
-      map.doubleClickZoom.disable();
-      setTimeout(() => map.invalidateSize(), 300);
-    }
+    // =============================
+    // MAPA (LA NUCÍA)
+    // =============================
+    const map = L.map('map').setView([38.6140, -0.1266], 14);
 
+    const normal = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    const satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri' }
+    );
+
+    normal.addTo(map);
+    L.control.layers({ "Mapa normal": normal, "Satélite": satellite }).addTo(map);
+    map.doubleClickZoom.disable();
+
+    // ✅ arreglo típico: cuando carga todo, fuerza tamaño
+    setTimeout(() => map.invalidateSize(), 250);
+
+    // =============================
+    // ICONOS
+    // =============================
     function makePinIcon(color) {
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 24 24">
@@ -240,8 +322,11 @@
           <circle cx="12" cy="9" r="2.6" fill="#ffffff"/>
         </svg>
       `.trim();
+
+      const url = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+
       return L.icon({
-        iconUrl: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+        iconUrl: url,
         iconSize: [34, 46],
         iconAnchor: [17, 46],
         popupAnchor: [0, -40]
@@ -251,100 +336,40 @@
     const volunteerIcon = makePinIcon("#e53935");
     const foodIcon = makePinIcon("#1e8e3e");
 
-    function getPublicUrl(path) {
-      if (!path) return "";
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      return data?.publicUrl || "";
+    // =============================
+    // helpers voluntario -> punto
+    // =============================
+    function fpIdFromLatLng(lat, lng) {
+      const a = Number(lat).toFixed(6);
+      const b = Number(lng).toFixed(6);
+      return `fp:${a}:${b}`;
     }
 
     function getFoodPointNameByFpId(fpId) {
-      const fp = markerLocations.find(m => m.type === "Punto de alimentación" && m.fp_id === fpId);
+      if (!fpId) return "";
+      const fp = markerLocations.find(m => m.type === "Punto de alimentación" && m.fpId === fpId);
       return fp ? (fp.name || "Punto de alimentación") : "";
     }
 
-    function clearAllMarkers() {
-      markersById.forEach(m => map.removeLayer(m));
-      markersById.clear();
-    }
-
-    function createMarkerFromRow(row) {
-      const icon = (row.type === "Punto de alimentación") ? foodIcon : volunteerIcon;
-
-      let belongsHtml = "";
-      if (row.type === "Voluntario") {
-        const fpName = getFoodPointNameByFpId(row.food_point_id || "");
-        belongsHtml = fpName
-          ? `<div style="margin-top:8px; padding:8px; border-radius:12px; background: rgba(30,142,62,0.10); border: 1px solid rgba(30,142,62,0.22);">
-              <b>🟢 Pertenece a:</b> ${escapeHtml(fpName)}
-            </div>`
-          : `<div class="note" style="margin-top:8px;">(No asignado a ningún punto de alimentación)</div>`;
-      }
-
-      const typeColor = (row.type === "Punto de alimentación") ? "#1e8e3e" : "#e53935";
-      const photoUrl = row.photo_path ? getPublicUrl(row.photo_path) : "";
-
-      const marker = L.marker([row.lat, row.lng], { icon }).addTo(map)
-        .bindPopup(`
-          <b>${escapeHtml(row.name)}</b><br>
-          <span style="font-weight:900;color:${typeColor};">${escapeHtml(row.type)}</span><br>
-          ${escapeHtml(row.description)}<br>
-          ${photoUrl ? `<img src="${escapeAttr(photoUrl)}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;margin-top:8px;">` : ""}
-          ${belongsHtml}
-          <div style="margin-top:10px;">
-            <button type="button" class="popup-btn danger" data-action="delete" data-id="${row.id}">
-              Eliminar
-            </button>
-          </div>
-        `)
-        .bindTooltip(row.name, { direction: "top" });
-
-      markersById.set(row.id, marker);
-    }
-
-    async function loadMarkers() {
-      const { data, error } = await supabase.from("markers").select("*").order("created_at", { ascending: true });
-      if (error) { alert("Error cargando marcadores: " + error.message); return; }
-      markerLocations = data || [];
-      clearAllMarkers();
-      markerLocations.forEach(createMarkerFromRow);
-    }
-
-    async function deleteMarkerById(id) {
-      const row = markerLocations.find(m => String(m.id) === String(id));
-      if (!row) return;
-
-      const { error } = await supabase.from("markers").delete().eq("id", id);
-      if (error) return alert("Error borrando: " + error.message);
-
-      if (row.photo_path) await supabase.storage.from(BUCKET).remove([row.photo_path]);
-      await loadMarkers();
-    }
-
-    function bindPopupDelete() {
-      map.on("popupopen", function (e) {
-        const root = e.popup.getElement();
-        if (!root) return;
-
-        root.querySelectorAll("button[data-action='delete']").forEach(btn => {
-          if (btn.dataset.bound === "1") return;
-          btn.dataset.bound = "1";
-
-          btn.addEventListener("click", async (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-
-            const id = btn.dataset.id;
-            if (!confirm("¿Seguro que quieres eliminar este marcador?")) return;
-
-            await deleteMarkerById(id);
-            map.closePopup();
-          });
-        });
-      });
-    }
-
-    // ====== modal foto ======
+    // =============================
+    // ✅ FOTO desde archivos
+    // =============================
     const photoInput = document.getElementById("photoInput");
+
+    function pickImageFile(callback) {
+      photoInput.value = "";
+      const onChange = () => {
+        const file = photoInput.files && photoInput.files[0];
+        photoInput.removeEventListener("change", onChange);
+        callback(file || null);
+      };
+      photoInput.addEventListener("change", onChange, { once: true });
+      photoInput.click();
+    }
+
+    // =============================
+    // ✅ Modal de foto
+    // =============================
     const photoModal = document.getElementById("photoModal");
     const photoModalBg = document.getElementById("photoModalBg");
     const photoModalClose = document.getElementById("photoModalClose");
@@ -352,131 +377,432 @@
     const skipPhotoBtn = document.getElementById("skipPhotoBtn");
 
     let __photoCb = null;
-    function openPhotoModal(cb) { __photoCb = cb; photoModal.classList.add("open"); }
-    function closePhotoModal() { photoModal.classList.remove("open"); }
-    function finishPhotoModal(fileOrNull) { const cb = __photoCb; __photoCb = null; closePhotoModal(); if (cb) cb(fileOrNull); }
 
-    photoModalBg.onclick = () => finishPhotoModal(null);
-    photoModalClose.onclick = () => finishPhotoModal(null);
-    skipPhotoBtn.onclick = () => finishPhotoModal(null);
-
-    function pickImageFile(cb) {
-      photoInput.value = "";
-      photoInput.onchange = () => cb(photoInput.files && photoInput.files[0] ? photoInput.files[0] : null);
-      photoInput.click();
-    }
-    pickPhotoBtn.onclick = () => pickImageFile((file) => finishPhotoModal(file));
-
-    async function uploadPhotoIfAny(file) {
-      if (!file) return "";
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${currentUser.id}/${uuid()}.${ext}`;
-
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
-      if (error) { alert("Error subiendo foto: " + error.message); return ""; }
-      return path;
+    function openPhotoModal(cb) {
+      __photoCb = cb;
+      photoModal.classList.add("open");
+      photoModal.setAttribute("aria-hidden", "false");
     }
 
-    function bindDblClickAdd() {
-      map.on("dblclick", function (e) {
-        const { lat, lng } = e.latlng;
+    function closePhotoModal() {
+      photoModal.classList.remove("open");
+      photoModal.setAttribute("aria-hidden", "true");
+    }
 
-        const option = prompt("¿Qué quieres añadir?\n\n1) Voluntario 🔴\n2) Punto de alimentación 🟢\n\nEscribe 1 o 2:");
-        let type = null;
-        if (option === "1") type = "Voluntario";
-        if (option === "2") type = "Punto de alimentación";
-        if (!type) return;
+    function finishPhotoModal(result) {
+      const cb = __photoCb;
+      __photoCb = null;
+      closePhotoModal();
+      if (cb) cb(result);
+    }
 
-        const name = prompt("Nombre:");
-        const description = prompt("Descripción:");
-        if (!name || !description) return;
+    photoModalBg.addEventListener("click", () => finishPhotoModal(null));
+    photoModalClose.addEventListener("click", () => finishPhotoModal(null));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && photoModal.classList.contains("open")) finishPhotoModal(null);
+    });
+    skipPhotoBtn.addEventListener("click", () => finishPhotoModal(null));
+    pickPhotoBtn.addEventListener("click", () => {
+      pickImageFile((fileOrNull) => finishPhotoModal(fileOrNull || null));
+    });
 
-        openPhotoModal(async (fileOrNull) => {
-          const photo_path = await uploadPhotoIfAny(fileOrNull);
+    // =============================
+    // ✅ DATOS (Supabase DB)
+    // =============================
+    let markerLocations = [];         // array para tu lógica del mapa
+    const markersByKey = new Map();   // key -> leaflet marker
 
-          const row = {
-            owner_id: currentUser.id,
-            lat, lng, type,
-            name, description,
-            photo_path: photo_path || null,
-            fp_id: type === "Punto de alimentación" ? fpIdFromLatLng(lat, lng) : null,
-            food_point_id: type === "Voluntario" ? "" : null
+    // si el bucket es public, publicUrl vale
+    function getPublicUrl(photoPath) {
+      if (!photoPath) return "";
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(photoPath);
+      return data?.publicUrl || "";
+    }
+
+    async function loadMarkersFromDb() {
+      showLoading("Cargando marcadores…");
+
+      const { data, error } = await supabase
+        .from("markers")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        hideLoading();
+        alert("Error cargando marcadores: " + error.message);
+        return;
+      }
+
+      // limpiar markers leaflet
+      markersByKey.clear();
+      markerLocations = [];
+
+      map.eachLayer(layer => {
+        if (layer instanceof L.Marker) map.removeLayer(layer);
+      });
+
+      for (const row of (data || [])) {
+        const obj = {
+          id: row.id,
+          lat: row.lat,
+          lng: row.lng,
+          type: row.type,
+          name: row.name,
+          description: row.description,
+          fpId: row.fp_id || "",
+          foodPointId: row.food_point_id || "",
+          photoPath: row.photo_path || "",
+          photoUrl: row.photo_path ? getPublicUrl(row.photo_path) : ""
+        };
+        markerLocations.push(obj);
+        createMarker(obj);
+      }
+
+      hideLoading();
+      setTimeout(() => map.invalidateSize(), 200);
+    }
+
+    await loadMarkersFromDb();
+
+    // =============================
+    // DOBLE CLICK -> AÑADIR (Supabase)
+    // =============================
+    map.on('dblclick', async function (e) {
+      const { lat, lng } = e.latlng;
+
+      const option = prompt(
+        "¿Qué quieres añadir?\n\n" +
+        "1) Voluntario 🔴\n" +
+        "2) Punto de alimentación 🟢\n\n" +
+        "Escribe 1 o 2:"
+      );
+
+      let type = null;
+      if (option === "1") type = "Voluntario";
+      if (option === "2") type = "Punto de alimentación";
+      if (!type) return;
+
+      const name = prompt("Nombre:");
+      const description = prompt("Descripción:");
+      if (!name || !description) return;
+
+      openPhotoModal(async (fileOrNull) => {
+        try {
+          showLoading("Guardando marcador…");
+
+          let photoPath = null;
+
+          // subir foto si existe
+          if (fileOrNull) {
+            const ext = (fileOrNull.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+            const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+            const { error: upErr } = await supabase
+              .storage
+              .from(BUCKET)
+              .upload(path, fileOrNull, { upsert: false });
+
+            if (upErr) {
+              alert("No se pudo subir la foto: " + upErr.message);
+            } else {
+              photoPath = path;
+            }
+          }
+
+          const insertObj = {
+            user_id: user.id,
+            lat,
+            lng,
+            type,
+            name,
+            description,
+            photo_path: photoPath,
+            fp_id: (type === "Punto de alimentación") ? fpIdFromLatLng(lat, lng) : null,
+            food_point_id: (type === "Voluntario") ? "" : null
           };
 
-          const { error } = await supabase.from("markers").insert(row);
-          if (error) return alert("Error guardando marcador: " + error.message);
+          const { data: inserted, error: insErr } = await supabase
+            .from("markers")
+            .insert(insertObj)
+            .select("*")
+            .single();
 
-          await loadMarkers();
-        });
+          if (insErr) {
+            // si insert falla y subió foto, intenta borrar foto
+            if (photoPath) await supabase.storage.from(BUCKET).remove([photoPath]);
+            hideLoading();
+            alert("Error guardando marcador: " + insErr.message);
+            return;
+          }
+
+          const obj = {
+            id: inserted.id,
+            lat: inserted.lat,
+            lng: inserted.lng,
+            type: inserted.type,
+            name: inserted.name,
+            description: inserted.description,
+            fpId: inserted.fp_id || "",
+            foodPointId: inserted.food_point_id || "",
+            photoPath: inserted.photo_path || "",
+            photoUrl: inserted.photo_path ? getPublicUrl(inserted.photo_path) : ""
+          };
+
+          markerLocations.push(obj);
+          createMarker(obj);
+
+          hideLoading();
+
+        } catch (err) {
+          console.error(err);
+          hideLoading();
+          alert("Error inesperado al añadir marcador.");
+        }
       });
+    });
+
+    // =============================
+    // CREAR MARCADOR + BORRAR (Supabase)
+    // =============================
+    function createMarker(m) {
+      const icon = (m.type === "Punto de alimentación") ? foodIcon : volunteerIcon;
+
+      let belongsHtml = "";
+      if (m.type === "Voluntario") {
+        const fpName = getFoodPointNameByFpId(m.foodPointId);
+        if (fpName) {
+          belongsHtml = `
+            <div style="margin-top:8px; padding:8px; border-radius:12px; background: rgba(30,142,62,0.10); border: 1px solid rgba(30,142,62,0.22);">
+              <b>🟢 Pertenece a:</b> ${escapeHtml(fpName)}
+            </div>
+          `;
+        } else {
+          belongsHtml = `
+            <div class="note" style="margin-top:8px;">
+              (No asignado a ningún punto de alimentación)
+            </div>
+          `;
+        }
+      }
+
+      const typeColor = (m.type === "Punto de alimentación") ? "#1e8e3e" : "#e53935";
+
+      const marker = L.marker([m.lat, m.lng], { icon }).addTo(map)
+        .bindPopup(`
+          <b>${escapeHtml(m.name)}</b><br>
+          <span style="font-weight:900;color:${typeColor};">
+            ${escapeHtml(m.type)}
+          </span><br>
+          ${escapeHtml(m.description)}<br>
+          ${m.photoUrl ? `<img src="${escapeAttr(m.photoUrl)}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;margin-top:8px;">` : ""}
+          ${belongsHtml}
+          <div style="margin-top:10px;">
+            <button type="button" class="popup-btn danger"
+              data-action="delete"
+              data-id="${m.id}">
+              Eliminar
+            </button>
+          </div>
+        `)
+        .bindTooltip(m.name, { direction: 'top' });
+
+      const key = buildKey(m.type, m.name, m.lat, m.lng);
+      markersByKey.set(key, marker);
     }
 
-    // ====== botones ======
-    document.getElementById("shareBtn").onclick = async () => {
-      const email = prompt("Correo de la persona con la que quieres compartir el mapa:");
-      if (!email) return;
-      const clean = email.trim().toLowerCase();
-      if (!clean.includes("@")) return alert("Correo no válido.");
+    map.on("popupopen", function (e) {
+      const root = e.popup.getElement();
+      if (!root) return;
 
-      const { error } = await supabase.from("shares").insert({ owner_id: currentUser.id, shared_email: clean });
-      if (error) return alert("Error compartiendo: " + error.message);
-      alert("Compartido con: " + clean);
-    };
+      root.querySelectorAll("button[data-action='delete']").forEach(btn => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
 
-    document.getElementById("logoutBtn").onclick = async () => {
-      await supabase.auth.signOut();
-      window.location.replace("login.html");
-    };
+        btn.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
 
-    document.getElementById("searchVolunteerBtn").onclick = () => {
-      const query = prompt("¿Qué voluntario quieres buscar? (nombre o parte del nombre)");
+          const id = btn.dataset.id;
+          const ok = confirm("¿Seguro que quieres eliminar este marcador?");
+          if (!ok) return;
+
+          await deleteMarkerById(id);
+          map.closePopup();
+        });
+      });
+    });
+
+    async function deleteMarkerById(id) {
+      const m = markerLocations.find(x => String(x.id) === String(id));
+      if (!m) return;
+
+      try {
+        showLoading("Borrando…");
+
+        const { error } = await supabase.from("markers").delete().eq("id", id);
+        if (error) {
+          hideLoading();
+          alert("Error borrando marcador: " + error.message);
+          return;
+        }
+
+        if (m.photoPath) {
+          await supabase.storage.from(BUCKET).remove([m.photoPath]);
+        }
+
+        markerLocations = markerLocations.filter(x => String(x.id) !== String(id));
+
+        // repintar (mantengo tu forma simple, sin romper nada)
+        markersByKey.clear();
+        map.eachLayer(layer => {
+          if (layer instanceof L.Marker) map.removeLayer(layer);
+        });
+        markerLocations.forEach(createMarker);
+
+        hideLoading();
+
+      } catch (err) {
+        console.error(err);
+        hideLoading();
+        alert("Error inesperado borrando.");
+      }
+    }
+
+    // =============================
+    // BUSCAR VOLUNTARIO
+    // =============================
+    document.getElementById("searchVolunteerBtn").addEventListener("click", () => {
+      const query = prompt("¿Qué voluntario quieres buscar? (escribe nombre o parte del nombre)");
       if (!query) return;
-      const q = query.trim().toLowerCase();
-      const arr = markerLocations.filter(m => m.type === "Voluntario" && (m.name || "").toLowerCase().includes(q));
-      if (!arr.length) return alert("No se encontró ningún voluntario con ese nombre.");
-      const chosen = arr[0];
-      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
-      const mk = markersById.get(chosen.id);
-      if (mk) mk.openPopup();
-    };
 
-    document.getElementById("searchFoodBtn").onclick = () => {
+      const q = query.trim().toLowerCase();
+      const volunteers = markerLocations.filter(m =>
+        m.type === "Voluntario" && (m.name || "").toLowerCase().includes(q)
+      );
+
+      if (volunteers.length === 0) {
+        alert("No se encontró ningún voluntario con ese nombre.");
+        return;
+      }
+
+      if (volunteers.length === 1) {
+        focusMarker(volunteers[0]);
+        return;
+      }
+
+      const menu = volunteers.map((v, i) => `${i + 1}) ${v.name}`).join("\n");
+      const choice = prompt(`He encontrado varios. Elige uno:\n\n${menu}\n\nEscribe el número:`);
+
+      const idx = Number(choice) - 1;
+      if (Number.isNaN(idx) || idx < 0 || idx >= volunteers.length) {
+        alert("Selección no válida.");
+        return;
+      }
+
+      focusMarker(volunteers[idx]);
+    });
+
+    // =============================
+    // BUSCAR PUNTO DE ALIMENTACIÓN
+    // =============================
+    document.getElementById("searchFoodBtn").addEventListener("click", () => {
       const query = prompt("¿Qué punto de alimentación quieres buscar? (nombre o parte del nombre)");
       if (!query) return;
+
       const q = query.trim().toLowerCase();
-      const arr = markerLocations.filter(m => m.type === "Punto de alimentación" && (m.name || "").toLowerCase().includes(q));
-      if (!arr.length) return alert("No se encontró ningún punto de alimentación con ese nombre.");
-      const chosen = arr[0];
-      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
-      const mk = markersById.get(chosen.id);
-      if (mk) mk.openPopup();
-    };
+      const points = markerLocations.filter(m =>
+        m.type === "Punto de alimentación" && (m.name || "").toLowerCase().includes(q)
+      );
 
-    // ====== INIT robusto ======
-    (async function init() {
-      try {
-        showLoading("Cargando sesión…");
-
-        currentUser = await requireSessionOrRedirect();
-        if (!currentUser) return; // ya redirige
-
-        setupHeader(currentUser);
-
-        showLoading("Cargando mapa…");
-        initMap();
-        bindPopupDelete();
-        bindDblClickAdd();
-
-        showLoading("Cargando marcadores…");
-        await loadMarkers();
-
-        hideLoading();
-      } catch (e) {
-        alert("Error en mapa.html: " + (e && e.message ? e.message : e));
-        // si peta, al menos quita el loading para que lo veas
-        hideLoading();
+      if (points.length === 0) {
+        alert("No se encontró ningún punto de alimentación con ese nombre.");
+        return;
       }
-    })();
+
+      if (points.length === 1) {
+        focusMarker(points[0]);
+        return;
+      }
+
+      const menu = points.map((p, i) => `${i + 1}) ${p.name}`).join("\n");
+      const choice = prompt(`He encontrado varios puntos. Elige uno:\n\n${menu}\n\nEscribe el número:`);
+
+      const idx = Number(choice) - 1;
+      if (Number.isNaN(idx) || idx < 0 || idx >= points.length) {
+        alert("Selección no válida.");
+        return;
+      }
+
+      focusMarker(points[idx]);
+    });
+
+    function focusMarker(m) {
+      const key = buildKey(m.type, m.name, m.lat, m.lng);
+      const marker = markersByKey.get(key);
+
+      map.setView([m.lat, m.lng], 17, { animate: true });
+      if (marker) marker.openPopup();
+    }
+
+    function buildKey(type, name, lat, lng) {
+      return `${type}:${String(name).toLowerCase()}:${lat}:${lng}`;
+    }
+
+    // =============================
+    // COMPARTIR (DB) -> tabla shares
+    // =============================
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const email = prompt("Correo de la persona con la que quieres compartir el mapa:");
+      if (!email) return;
+
+      const clean = email.trim().toLowerCase();
+      if (!clean.includes("@")) {
+        alert("Correo no válido.");
+        return;
+      }
+
+      try {
+        showLoading("Compartiendo…");
+
+        const { error } = await supabase.from("shares").insert({
+          owner_id: user.id,
+          shared_email: clean
+        });
+
+        hideLoading();
+
+        if (error) {
+          alert("Error compartiendo: " + error.message);
+          return;
+        }
+
+        alert("Compartido con: " + clean);
+      } catch (err) {
+        console.error(err);
+        hideLoading();
+        alert("Error inesperado compartiendo.");
+      }
+    });
+
+    // =============================
+    // LOGOUT
+    // =============================
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.replace("login.html");
+    });
+
+    // Utils escape
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[m]));
+    }
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/`/g, "&#096;");
+    }
+
+    hideLoading();
   </script>
 
 </body>
