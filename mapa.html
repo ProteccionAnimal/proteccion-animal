@@ -37,13 +37,26 @@
     .modal__close { cursor:pointer; border:none; background: rgba(255,255,255,0.9); border-radius: 12px; padding: 8px 10px; font-weight: 900; }
     .modal__body { padding: 14px 16px 16px; }
 
-    /* ✅ Para que NO se vea el mapa ni el contenido hasta validar sesión */
-    body[data-ready="0"] main,
-    body[data-ready="0"] footer { display: none; }
+    /* ✅ Pantalla de carga (no rompe el layout) */
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(4px);
+      font-weight: 900;
+      color: #1177cc;
+    }
+    #loadingScreen.hidden { display: none; }
   </style>
 </head>
 
-<body data-ready="0">
+<body>
+
+  <div id="loadingScreen">Cargando sesión…</div>
 
   <header class="topbar">
     <div class="topbar__inner">
@@ -57,8 +70,7 @@
         <a class="nav__link nav__link--active" href="mapa.html">Mapa</a>
       </nav>
 
-      <!-- ✅ Usuario: si no hay sesión -> link a login
-           si hay sesión -> botón que abre dropdown (NO navega) -->
+      <!-- ✅ Usuario: si hay sesión -> botón abre menú; si no -> login -->
       <div class="user user--menu" id="userMenuWrap">
         <a class="user__btn" href="login.html" id="userBtn" aria-label="Cuenta">
           <span class="user__text" id="userLabel">Login</span>
@@ -66,7 +78,9 @@
 
         <div class="user-dropdown" id="userDropdown" aria-label="Menú usuario">
           <a class="user-dropdown__item" href="configurar.html" id="configUserBtn">⚙️ Configurar usuario</a>
-          <button class="user-dropdown__item user-dropdown__danger" type="button" id="logoutTopBtn">🚪 Cerrar sesión</button>
+          <button class="user-dropdown__item user-dropdown__danger" type="button" id="logoutTopBtn">
+            🚪 Cerrar sesión
+          </button>
         </div>
       </div>
     </div>
@@ -129,8 +143,11 @@
     const SUPABASE_URL = "https://vkyusosabullpvudxafy.supabase.co";
     const SUPABASE_KEY = "sb_publishable_8JbsqfmoH05omWj1p2jPXg_EwZDntlT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const BUCKET = "marker-photos";
+
+    const loading = document.getElementById("loadingScreen");
+    function hideLoading(){ loading.classList.add("hidden"); }
+    function showLoading(t){ loading.textContent = t || "Cargando…"; loading.classList.remove("hidden"); }
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -144,18 +161,50 @@
       }[m]));
     }
     function escapeAttr(str) { return escapeHtml(str).replace(/`/g, "&#096;"); }
+    function uuid() { return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ("id-" + Date.now() + "-" + Math.random().toString(16).slice(2)); }
 
-    function uuid() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      // fallback simple (evita que reviente en navegadores raros)
-      return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+    // ====== estado ======
+    let currentUser = null;
+    let map = null;
+    let markerLocations = [];
+    const markersById = new Map();
+
+    // ====== header dropdown (solo abre menú) ======
+    function setupHeader(user) {
+      const userLabel = document.getElementById("userLabel");
+      const userBtn = document.getElementById("userBtn");
+      const logoutTopBtn = document.getElementById("logoutTopBtn");
+      const wrap = document.getElementById("userMenuWrap");
+
+      const displayName =
+        (user?.user_metadata?.display_name && String(user.user_metadata.display_name).trim() !== "")
+          ? String(user.user_metadata.display_name).trim()
+          : (user?.email || "Cuenta");
+
+      userLabel.textContent = displayName;
+
+      // ✅ si hay sesión: NO navegar, solo menú
+      userBtn.href = "#";
+      userBtn.onclick = (e) => { e.preventDefault(); wrap.classList.toggle("open"); };
+
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) wrap.classList.remove("open");
+      });
+
+      logoutTopBtn.onclick = async () => {
+        await supabase.auth.signOut();
+        window.location.replace("login.html");
+      };
     }
 
-    // ====== session required ======
-    let currentUser = null;
-
-    async function requireLoginSupabase() {
-      const { data } = await supabase.auth.getSession();
+    // ====== sesión obligatoria ======
+    async function requireSessionOrRedirect() {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        alert("Error sesión: " + error.message);
+        window.location.replace("login.html");
+        return null;
+      }
       const session = data?.session;
       if (!session) {
         window.location.replace("login.html");
@@ -164,45 +213,7 @@
       return session.user;
     }
 
-    // ====== UI header dropdown ======
-    function setupHeader(user) {
-      const userLabel = document.getElementById("userLabel");
-      const userBtn = document.getElementById("userBtn");
-      const logoutTopBtn = document.getElementById("logoutTopBtn");
-      const wrap = document.getElementById("userMenuWrap");
-
-      const displayName =
-        (user?.user_metadata && user.user_metadata.display_name && String(user.user_metadata.display_name).trim() !== "")
-          ? String(user.user_metadata.display_name).trim()
-          : (user?.email || "Cuenta");
-
-      userLabel.textContent = displayName;
-
-      // ✅ IMPORTANTE:
-      // - si hay sesión: NO navega, solo abre dropdown
-      userBtn.href = "#";
-      userBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        wrap.classList.toggle("open");
-      });
-
-      // cerrar al clicar fuera
-      document.addEventListener("click", (e) => {
-        if (!wrap.contains(e.target)) wrap.classList.remove("open");
-      });
-
-      // cerrar sesión
-      logoutTopBtn.addEventListener("click", async () => {
-        await supabase.auth.signOut();
-        window.location.replace("login.html");
-      });
-    }
-
-    // ====== Map setup (se crea SOLO cuando hay sesión) ======
-    let map = null;
-    let markerLocations = [];      // rows DB
-    const markersById = new Map(); // id -> leaflet marker
-
+    // ====== mapa ======
     function initMap() {
       map = L.map("map").setView([38.6140, -0.1266], 14);
 
@@ -217,10 +228,9 @@
 
       normal.addTo(map);
       L.control.layers({ "Mapa normal": normal, "Satélite": satellite }).addTo(map);
-      map.doubleClickZoom.disable();
 
-      // ✅ Asegura que se vea bien el mapa
-      setTimeout(() => map.invalidateSize(), 250);
+      map.doubleClickZoom.disable();
+      setTimeout(() => map.invalidateSize(), 300);
     }
 
     function makePinIcon(color) {
@@ -281,9 +291,7 @@
           ${photoUrl ? `<img src="${escapeAttr(photoUrl)}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;margin-top:8px;">` : ""}
           ${belongsHtml}
           <div style="margin-top:10px;">
-            <button type="button" class="popup-btn danger"
-              data-action="delete"
-              data-id="${row.id}">
+            <button type="button" class="popup-btn danger" data-action="delete" data-id="${row.id}">
               Eliminar
             </button>
           </div>
@@ -294,37 +302,25 @@
     }
 
     async function loadMarkers() {
-      const { data, error } = await supabase
-        .from("markers")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        alert("Error cargando marcadores: " + error.message);
-        return;
-      }
-
+      const { data, error } = await supabase.from("markers").select("*").order("created_at", { ascending: true });
+      if (error) { alert("Error cargando marcadores: " + error.message); return; }
       markerLocations = data || [];
       clearAllMarkers();
       markerLocations.forEach(createMarkerFromRow);
     }
 
     async function deleteMarkerById(id) {
-      const row = markerLocations.find(m => m.id === id);
+      const row = markerLocations.find(m => String(m.id) === String(id));
       if (!row) return;
 
       const { error } = await supabase.from("markers").delete().eq("id", id);
       if (error) return alert("Error borrando: " + error.message);
 
-      if (row.photo_path) {
-        await supabase.storage.from(BUCKET).remove([row.photo_path]);
-      }
-
+      if (row.photo_path) await supabase.storage.from(BUCKET).remove([row.photo_path]);
       await loadMarkers();
     }
 
-    // bind delete buttons
-    function bindPopupDeleteHandlers() {
+    function bindPopupDelete() {
       map.on("popupopen", function (e) {
         const root = e.popup.getElement();
         if (!root) return;
@@ -337,9 +333,8 @@
             ev.preventDefault();
             ev.stopPropagation();
 
-            const id = btn.dataset.id; // id puede ser uuid o number
-            const ok = confirm("¿Seguro que quieres eliminar este marcador?");
-            if (!ok) return;
+            const id = btn.dataset.id;
+            if (!confirm("¿Seguro que quieres eliminar este marcador?")) return;
 
             await deleteMarkerById(id);
             map.closePopup();
@@ -348,7 +343,7 @@
       });
     }
 
-    // ====== photo modal (file upload) ======
+    // ====== modal foto ======
     const photoInput = document.getElementById("photoInput");
     const photoModal = document.getElementById("photoModal");
     const photoModalBg = document.getElementById("photoModalBg");
@@ -357,74 +352,36 @@
     const skipPhotoBtn = document.getElementById("skipPhotoBtn");
 
     let __photoCb = null;
+    function openPhotoModal(cb) { __photoCb = cb; photoModal.classList.add("open"); }
+    function closePhotoModal() { photoModal.classList.remove("open"); }
+    function finishPhotoModal(fileOrNull) { const cb = __photoCb; __photoCb = null; closePhotoModal(); if (cb) cb(fileOrNull); }
 
-    function openPhotoModal(cb) {
-      __photoCb = cb;
-      photoModal.classList.add("open");
-      photoModal.setAttribute("aria-hidden", "false");
-    }
-    function closePhotoModal() {
-      photoModal.classList.remove("open");
-      photoModal.setAttribute("aria-hidden", "true");
-    }
-    function finishPhotoModal(fileOrNull) {
-      const cb = __photoCb;
-      __photoCb = null;
-      closePhotoModal();
-      if (cb) cb(fileOrNull);
-    }
-
-    photoModalBg.addEventListener("click", () => finishPhotoModal(null));
-    photoModalClose.addEventListener("click", () => finishPhotoModal(null));
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && photoModal.classList.contains("open")) finishPhotoModal(null);
-    });
-    skipPhotoBtn.addEventListener("click", () => finishPhotoModal(null));
+    photoModalBg.onclick = () => finishPhotoModal(null);
+    photoModalClose.onclick = () => finishPhotoModal(null);
+    skipPhotoBtn.onclick = () => finishPhotoModal(null);
 
     function pickImageFile(cb) {
       photoInput.value = "";
-      const onChange = () => {
-        const file = photoInput.files && photoInput.files[0];
-        photoInput.removeEventListener("change", onChange);
-        cb(file || null);
-      };
-      photoInput.addEventListener("change", onChange, { once: true });
+      photoInput.onchange = () => cb(photoInput.files && photoInput.files[0] ? photoInput.files[0] : null);
       photoInput.click();
     }
-
-    pickPhotoBtn.addEventListener("click", () => {
-      pickImageFile((file) => finishPhotoModal(file));
-    });
+    pickPhotoBtn.onclick = () => pickImageFile((file) => finishPhotoModal(file));
 
     async function uploadPhotoIfAny(file) {
       if (!file) return "";
-
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const path = `${currentUser.id}/${uuid()}.${ext}`;
 
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: false, contentType: file.type });
-
-      if (error) {
-        alert("Error subiendo foto: " + error.message);
-        return "";
-      }
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+      if (error) { alert("Error subiendo foto: " + error.message); return ""; }
       return path;
     }
 
-    // ====== add marker ======
-    function bindDblClickAddMarker() {
+    function bindDblClickAdd() {
       map.on("dblclick", function (e) {
         const { lat, lng } = e.latlng;
 
-        const option = prompt(
-          "¿Qué quieres añadir?\n\n" +
-          "1) Voluntario 🔴\n" +
-          "2) Punto de alimentación 🟢\n\n" +
-          "Escribe 1 o 2:"
-        );
-
+        const option = prompt("¿Qué quieres añadir?\n\n1) Voluntario 🔴\n2) Punto de alimentación 🟢\n\nEscribe 1 o 2:");
         let type = null;
         if (option === "1") type = "Voluntario";
         if (option === "2") type = "Punto de alimentación";
@@ -454,98 +411,71 @@
       });
     }
 
-    // ====== search buttons ======
-    document.getElementById("searchVolunteerBtn").addEventListener("click", () => {
-      const query = prompt("¿Qué voluntario quieres buscar? (nombre o parte del nombre)");
-      if (!query) return;
-
-      const q = query.trim().toLowerCase();
-      const volunteers = markerLocations.filter(m =>
-        m.type === "Voluntario" && (m.name || "").toLowerCase().includes(q)
-      );
-
-      if (volunteers.length === 0) return alert("No se encontró ningún voluntario con ese nombre.");
-
-      let chosen = volunteers[0];
-      if (volunteers.length > 1) {
-        const menu = volunteers.map((v, i) => `${i + 1}) ${v.name}`).join("\n");
-        const choice = prompt(`He encontrado varios. Elige uno:\n\n${menu}\n\nEscribe el número:`);
-        const idx = Number(choice) - 1;
-        if (Number.isNaN(idx) || idx < 0 || idx >= volunteers.length) return alert("Selección no válida.");
-        chosen = volunteers[idx];
-      }
-
-      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
-      const marker = markersById.get(chosen.id);
-      if (marker) marker.openPopup();
-    });
-
-    document.getElementById("searchFoodBtn").addEventListener("click", () => {
-      const query = prompt("¿Qué punto de alimentación quieres buscar? (nombre o parte del nombre)");
-      if (!query) return;
-
-      const q = query.trim().toLowerCase();
-      const points = markerLocations.filter(m =>
-        m.type === "Punto de alimentación" && (m.name || "").toLowerCase().includes(q)
-      );
-
-      if (points.length === 0) return alert("No se encontró ningún punto de alimentación con ese nombre.");
-
-      let chosen = points[0];
-      if (points.length > 1) {
-        const menu = points.map((p, i) => `${i + 1}) ${p.name}`).join("\n");
-        const choice = prompt(`He encontrado varios puntos. Elige uno:\n\n${menu}\n\nEscribe el número:`);
-        const idx = Number(choice) - 1;
-        if (Number.isNaN(idx) || idx < 0 || idx >= points.length) return alert("Selección no válida.");
-        chosen = points[idx];
-      }
-
-      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
-      const marker = markersById.get(chosen.id);
-      if (marker) marker.openPopup();
-    });
-
-    // ====== share button (DB) ======
-    document.getElementById("shareBtn").addEventListener("click", async () => {
+    // ====== botones ======
+    document.getElementById("shareBtn").onclick = async () => {
       const email = prompt("Correo de la persona con la que quieres compartir el mapa:");
       if (!email) return;
       const clean = email.trim().toLowerCase();
       if (!clean.includes("@")) return alert("Correo no válido.");
 
-      const { error } = await supabase.from("shares").insert({
-        owner_id: currentUser.id,
-        shared_email: clean
-      });
-
+      const { error } = await supabase.from("shares").insert({ owner_id: currentUser.id, shared_email: clean });
       if (error) return alert("Error compartiendo: " + error.message);
       alert("Compartido con: " + clean);
-    });
+    };
 
-    // ====== logout right button ======
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
+    document.getElementById("logoutBtn").onclick = async () => {
       await supabase.auth.signOut();
       window.location.replace("login.html");
-    });
+    };
 
-    // ====== init ======
+    document.getElementById("searchVolunteerBtn").onclick = () => {
+      const query = prompt("¿Qué voluntario quieres buscar? (nombre o parte del nombre)");
+      if (!query) return;
+      const q = query.trim().toLowerCase();
+      const arr = markerLocations.filter(m => m.type === "Voluntario" && (m.name || "").toLowerCase().includes(q));
+      if (!arr.length) return alert("No se encontró ningún voluntario con ese nombre.");
+      const chosen = arr[0];
+      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
+      const mk = markersById.get(chosen.id);
+      if (mk) mk.openPopup();
+    };
+
+    document.getElementById("searchFoodBtn").onclick = () => {
+      const query = prompt("¿Qué punto de alimentación quieres buscar? (nombre o parte del nombre)");
+      if (!query) return;
+      const q = query.trim().toLowerCase();
+      const arr = markerLocations.filter(m => m.type === "Punto de alimentación" && (m.name || "").toLowerCase().includes(q));
+      if (!arr.length) return alert("No se encontró ningún punto de alimentación con ese nombre.");
+      const chosen = arr[0];
+      map.setView([chosen.lat, chosen.lng], 17, { animate: true });
+      const mk = markersById.get(chosen.id);
+      if (mk) mk.openPopup();
+    };
+
+    // ====== INIT robusto ======
     (async function init() {
-      // 1) sesión o fuera
-      currentUser = await requireLoginSupabase();
-      if (!currentUser) return;
+      try {
+        showLoading("Cargando sesión…");
 
-      // 2) header ok (NO navega, solo dropdown)
-      setupHeader(currentUser);
+        currentUser = await requireSessionOrRedirect();
+        if (!currentUser) return; // ya redirige
 
-      // 3) ya podemos mostrar la página
-      document.body.setAttribute("data-ready", "1");
+        setupHeader(currentUser);
 
-      // 4) mapa
-      initMap();
-      bindPopupDeleteHandlers();
-      bindDblClickAddMarker();
+        showLoading("Cargando mapa…");
+        initMap();
+        bindPopupDelete();
+        bindDblClickAdd();
 
-      // 5) datos
-      await loadMarkers();
+        showLoading("Cargando marcadores…");
+        await loadMarkers();
+
+        hideLoading();
+      } catch (e) {
+        alert("Error en mapa.html: " + (e && e.message ? e.message : e));
+        // si peta, al menos quita el loading para que lo veas
+        hideLoading();
+      }
     })();
   </script>
 
