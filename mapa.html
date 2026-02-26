@@ -465,6 +465,53 @@
     await loadMarkersFromDb();
 
     // =============================
+// ✅ REALTIME: refrescar mapa al instante
+// (cuando el index asigna voluntario -> UPDATE en markers)
+// =============================
+let realtimeChannel = null;
+
+function startRealtime() {
+  try {
+    // si ya existe, lo quitamos para no duplicar
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+
+    realtimeChannel = supabase
+      .channel("rt-markers-" + user.id)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "markers",
+          // 🔒 si tu columna se llama user_id (como en tu mapa), filtra así:
+          filter: `user_id=eq.${user.id}`
+          // Si tu columna fuera owner_id, sería:
+          // filter: `owner_id=eq.${user.id}`
+        },
+        async (payload) => {
+          // Re-carga completa (simple y fiable)
+          await loadMarkersFromDb();
+        }
+      )
+      .subscribe((status) => {
+        // opcional debug
+        // console.log("Realtime markers:", status);
+      });
+
+    // limpieza al salir de la página
+    window.addEventListener("beforeunload", () => {
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    });
+
+  } catch (e) {
+    console.warn("Realtime no disponible:", e);
+  }
+}
+
+// arrancar realtime
+startRealtime();
+
+    // =============================
     // DOBLE CLICK -> AÑADIR (Supabase)
     // =============================
     map.on('dblclick', async function (e) {
