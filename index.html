@@ -139,7 +139,7 @@
       </section>
     </main>
 
-    <!-- Modal (lo de asignar voluntarios lo haremos cuando el mapa ya esté en BD) -->
+    <!-- ✅ Modal REAL: gestionar punto -->
     <div class="modal" id="fpModal" aria-hidden="true">
       <div class="modal__backdrop" id="fpModalCloseBg"></div>
 
@@ -153,8 +153,20 @@
         </div>
 
         <div class="modal__body">
-          <p class="note">
-            Este panel lo activaremos cuando migremos el mapa completo a Supabase (marcadores + asignaciones).
+          <div class="modal__grid">
+            <div class="modal__box">
+              <div class="modal__boxTitle">Voluntarios asignados</div>
+              <div class="mini-list" id="fpAssignedList"></div>
+            </div>
+
+            <div class="modal__box">
+              <div class="modal__boxTitle">Voluntarios disponibles</div>
+              <div class="mini-list" id="fpAvailableList"></div>
+            </div>
+          </div>
+
+          <p class="note" style="margin-top:10px;">
+            * Se guarda en Supabase actualizando <b>markers.food_point_id</b> del voluntario.
           </p>
         </div>
       </div>
@@ -179,6 +191,9 @@
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
       }[m]));
     }
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/`/g, "&#096;");
+    }
 
     // UI refs
     const userText = document.getElementById("userText");
@@ -197,14 +212,21 @@
     const fpSummary = document.getElementById("fpSummary");
     const fpMiniList = document.getElementById("fpMiniList");
 
+    // Modal refs
+    const fpModal = document.getElementById("fpModal");
+    const fpModalCloseBtn = document.getElementById("fpModalCloseBtn");
+    const fpModalCloseBg = document.getElementById("fpModalCloseBg");
+    const fpModalTitle = document.getElementById("fpModalTitle");
+    const fpModalSub = document.getElementById("fpModalSub");
+    const fpAssignedList = document.getElementById("fpAssignedList");
+    const fpAvailableList = document.getElementById("fpAvailableList");
+
     // Dropdown click
     userBtn.addEventListener("click", (e) => {
-      // si estás en login (sin sesión), deja navegar
       if (userBtn.getAttribute("href") !== "#") return;
       e.preventDefault();
       wrap.classList.toggle("open");
     });
-
     document.addEventListener("click", (e) => {
       if (!wrap.contains(e.target)) wrap.classList.remove("open");
     });
@@ -215,10 +237,209 @@
       window.location.reload();
     });
 
+    function openModal() {
+      fpModal.classList.add("open");
+      fpModal.setAttribute("aria-hidden", "false");
+    }
+    function closeModal() {
+      fpModal.classList.remove("open");
+      fpModal.setAttribute("aria-hidden", "true");
+    }
+    fpModalCloseBtn.addEventListener("click", closeModal);
+    fpModalCloseBg.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && fpModal.classList.contains("open")) closeModal();
+    });
+
+    // =========================
+    // ✅ BD helpers (user_id vs owner_id)
+    // =========================
+    async function fetchMarkersForUser(userId) {
+      // 1) probar user_id
+      let res = await supabase
+        .from("markers")
+        .select("id,type,name,description,fp_id,food_point_id,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      // 2) si falla por columna, probar owner_id
+      if (res.error && (String(res.error.message || "").toLowerCase().includes("user_id"))) {
+        res = await supabase
+          .from("markers")
+          .select("id,type,name,description,fp_id,food_point_id,created_at")
+          .eq("owner_id", userId)
+          .order("created_at", { ascending: true });
+      }
+      return res;
+    }
+
+    async function fetchSharesForUser(userId) {
+      let res = await supabase
+        .from("shares")
+        .select("shared_email,created_at")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (res.error && (String(res.error.message || "").toLowerCase().includes("owner_id"))) {
+        res = await supabase
+          .from("shares")
+          .select("shared_email,created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
+      }
+      return res;
+    }
+
+    // =========================
+    // ✅ Estado
+    // =========================
+    let currentUser = null;
+    let markersCache = [];   // rows
+    let __currentFpId = null;
+
+    function splitMarkers(markers) {
+      const volunteers = markers.filter(m => m.type === "Voluntario");
+      const foodPoints = markers.filter(m => m.type === "Punto de alimentación");
+      return { volunteers, foodPoints };
+    }
+
+    function renderCounts(volunteers, foodPoints) {
+      volEl.textContent = String(volunteers.length);
+      foodEl.textContent = String(foodPoints.length);
+      if (fpSummary) fpSummary.textContent = `🟢 ${foodPoints.length} · 🔴 ${volunteers.length}`;
+      if (fpHint) fpHint.textContent = foodPoints.length
+        ? "Pulsa “Gestionar” para asignar voluntarios a un punto."
+        : "Aún no tienes puntos de alimentación creados.";
+    }
+
+    function renderMiniFoodPoints(foodPoints, volunteers) {
+      const MAX = 4;
+      const shown = foodPoints.slice(0, MAX);
+
+      if (!fpMiniList) return;
+
+      if (foodPoints.length === 0) {
+        fpMiniList.innerHTML = `<div class="note">No hay puntos todavía.</div>`;
+        return;
+      }
+
+      fpMiniList.innerHTML = shown.map(fp => {
+        const fpId = fp.fp_id || "";
+        const assignedCount = volunteers.filter(v => (v.food_point_id || "") === fpId).length;
+
+        return `
+          <div class="mini-row">
+            <div class="mini-left">
+              <div class="mini-title">🟢 ${escapeHtml(fp.name || "Punto de alimentación")}</div>
+              <div class="mini-sub">🔴 ${assignedCount} voluntarios</div>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" type="button" data-fp="${escapeAttr(fpId)}">Gestionar</button>
+            </div>
+          </div>
+        `;
+      }).join("") + (foodPoints.length > MAX ? `
+        <div class="note">Mostrando ${MAX} de ${foodPoints.length}. En el mapa verás todos.</div>
+      ` : "");
+
+      fpMiniList.querySelectorAll("button[data-fp]").forEach(btn => {
+        btn.addEventListener("click", () => openFpModal(btn.getAttribute("data-fp")));
+      });
+    }
+
+    async function updateVolunteerFoodPoint(volunteerId, fpIdOrEmpty) {
+      const { error } = await supabase
+        .from("markers")
+        .update({ food_point_id: fpIdOrEmpty })
+        .eq("id", volunteerId);
+
+      if (error) {
+        alert("Error actualizando voluntario: " + error.message);
+        return false;
+      }
+      return true;
+    }
+
+    function openFpModal(fpId) {
+      __currentFpId = fpId;
+
+      const { volunteers, foodPoints } = splitMarkers(markersCache);
+      const fp = foodPoints.find(p => (p.fp_id || "") === fpId);
+      if (!fp) return;
+
+      fpModalTitle.textContent = `🟢 ${fp.name || "Punto de alimentación"}`;
+      fpModalSub.textContent = fp.description ? fp.description : "Gestiona voluntarios de este punto";
+
+      const assigned = volunteers.filter(v => (v.food_point_id || "") === fpId);
+      const available = volunteers.filter(v => (v.food_point_id || "") !== fpId);
+
+      fpAssignedList.innerHTML = assigned.length ? assigned.map(v => `
+        <div class="mini-row">
+          <div class="mini-left">
+            <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
+            <div class="mini-sub">${escapeHtml(v.description || "")}</div>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn danger" type="button" data-unassign="${escapeAttr(String(v.id))}">Quitar</button>
+          </div>
+        </div>
+      `).join("") : `<div class="note">No hay voluntarios asignados.</div>`;
+
+      fpAvailableList.innerHTML = available.length ? available.map(v => `
+        <div class="mini-row">
+          <div class="mini-left">
+            <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
+            <div class="mini-sub">${escapeHtml((v.food_point_id || "") ? "Asignado a otro punto" : "Sin asignar")}</div>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" type="button" data-assign="${escapeAttr(String(v.id))}">Asignar</button>
+          </div>
+        </div>
+      `).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
+
+      fpAssignedList.querySelectorAll("button[data-unassign]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const id = b.getAttribute("data-unassign");
+          const ok = await updateVolunteerFoodPoint(id, "");
+          if (!ok) return;
+          await refreshHomeData(true);
+        });
+      });
+
+      fpAvailableList.querySelectorAll("button[data-assign]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const id = b.getAttribute("data-assign");
+          const ok = await updateVolunteerFoodPoint(id, fpId);
+          if (!ok) return;
+          await refreshHomeData(true);
+        });
+      });
+
+      openModal();
+    }
+
+    async function refreshHomeData(keepModal = false) {
+      const { data: markers, error } = await fetchMarkersForUser(currentUser.id);
+      if (error) {
+        alert("Error cargando marcadores: " + error.message);
+        return;
+      }
+
+      markersCache = markers || [];
+
+      const { volunteers, foodPoints } = splitMarkers(markersCache);
+      renderCounts(volunteers, foodPoints);
+      renderMiniFoodPoints(foodPoints, volunteers);
+
+      if (keepModal && fpModal.classList.contains("open") && __currentFpId) {
+        openFpModal(__currentFpId);
+      }
+    }
+
     async function loadHomeFromSupabase() {
-      // 1) sesión
       const { data: u } = await supabase.auth.getUser();
       const user = u?.user;
+      currentUser = user || null;
 
       if (!user) {
         userText.textContent = "Login";
@@ -237,7 +458,6 @@
         return;
       }
 
-      // 2) header con display_name
       const displayName = (user.user_metadata?.display_name || "").trim();
       userText.textContent = displayName || user.email || "Cuenta";
       userBtn.href = "#";
@@ -245,58 +465,21 @@
       if (loginCta) loginCta.href = "mapa.html";
       hint.textContent = "Sesión: " + (user.email || "ok");
 
-      // 3) contar marcadores (tabla: markers)
-      //    Esperamos columnas: owner_id (uuid), type (texto)
-      let volunteersCount = 0;
-      let foodPointsCount = 0;
+      // ✅ Cargar marcadores (y ya salen voluntarios)
+      await refreshHomeData(false);
 
-      const { data: markers, error: markersErr } = await supabase
-        .from("markers")
-        .select("type")
-        .eq("owner_id", user.id);
-
-      if (!markersErr && Array.isArray(markers)) {
-        volunteersCount = markers.filter(m => m.type === "Voluntario").length;
-        foodPointsCount = markers.filter(m => m.type === "Punto de alimentación").length;
-      } else {
-        // si aún no has creado tabla, no rompemos la página
-        console.warn("No puedo leer tabla markers todavía:", markersErr?.message);
-      }
-
-      volEl.textContent = String(volunteersCount);
-      foodEl.textContent = String(foodPointsCount);
-
-      if (fpSummary) fpSummary.textContent = `🟢 ${foodPointsCount} · 🔴 ${volunteersCount}`;
-      if (fpHint) fpHint.textContent = foodPointsCount
-        ? "Los puntos se verán aquí cuando terminemos la migración del mapa a la BD."
-        : "Aún no tienes puntos creados (o falta crear la tabla markers).";
-
-      if (fpMiniList) {
-        fpMiniList.innerHTML = foodPointsCount
-          ? `<div class="note">En cuanto migremos el mapa a Supabase, aquí saldrá la lista mini de puntos.</div>`
-          : `<div class="note">—</div>`;
-      }
-
-      // 4) lista compartidos (tabla: shares)
-      //    Esperamos columnas: owner_id (uuid), shared_email (texto)
-      const { data: shares, error: sharesErr } = await supabase
-        .from("shares")
-        .select("shared_email")
-        .eq("owner_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (sharesErr) {
-        console.warn("No puedo leer tabla shares todavía:", sharesErr?.message);
-        listEl.innerHTML = "<li>(Aún falta crear la tabla <b>shares</b> en Supabase)</li>";
+      // Shares
+      const sharesRes = await fetchSharesForUser(user.id);
+      if (sharesRes.error) {
+        console.warn("No puedo leer tabla shares:", sharesRes.error.message);
+        listEl.innerHTML = "<li>(Aún falta crear/ajustar la tabla <b>shares</b> en Supabase)</li>";
         return;
       }
-
-      if (!shares || shares.length === 0) {
+      const shares = sharesRes.data || [];
+      if (shares.length === 0) {
         listEl.innerHTML = "<li>No has compartido el mapa con nadie todavía.</li>";
       } else {
-        listEl.innerHTML = shares
-          .map(s => `<li><b>${escapeHtml(s.shared_email || "")}</b></li>`)
-          .join("");
+        listEl.innerHTML = shares.map(s => `<li><b>${escapeHtml(s.shared_email || "")}</b></li>`).join("");
       }
     }
 
