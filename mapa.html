@@ -174,6 +174,12 @@
           </div>
         </div>
 
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:center;">
+          <input id="addressInput" type="text" placeholder="Buscar calle o dirección (ej: Calle Mayor 10, La Nucía)"
+            style="min-width:260px; padding:10px 12px; border-radius:12px; border:1px solid rgba(17,119,204,0.25); outline:none;" />
+          <button class="btn btn--primary" id="addressSearchBtn" type="button">Buscar</button>
+        </div>
+
         <div class="map-actions">
           <button class="btn btn--danger" id="logoutBtn" type="button">Cerrar sesión</button>
         </div>
@@ -849,6 +855,99 @@
     }
 
     hideLoading();
+
+    // =============================
+    // ✅ BUSCADOR DE CALLES (Nominatim / OpenStreetMap)
+    // =============================
+    let __searchMarker = null;
+
+    async function searchAddressAndGo(query) {
+      const q = String(query || "").trim();
+      if (!q) return;
+
+      try {
+        showLoading("Buscando calle…");
+
+        // Nominatim (OpenStreetMap)
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(q)}`;
+
+        const res = await fetch(url, {
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        if (!res.ok) throw new Error("No se pudo buscar la dirección.");
+
+        const results = await res.json();
+        hideLoading();
+
+        if (!Array.isArray(results) || results.length === 0) {
+          alert("No se encontró esa dirección. Prueba con más detalles (ciudad, número, etc.).");
+          return;
+        }
+
+        // Si hay varias opciones, elegir con prompt
+        let chosen = results[0];
+        if (results.length > 1) {
+          const menu = results
+            .map((r, i) => `${i + 1}) ${r.display_name}`)
+            .join("\n");
+
+          const choice = prompt(`He encontrado varias direcciones:\n\n${menu}\n\nEscribe el número:`);
+          const idx = Number(choice) - 1;
+          if (!Number.isNaN(idx) && idx >= 0 && idx < results.length) {
+            chosen = results[idx];
+          } else {
+            // si cancelan o ponen mal, usamos la primera
+            chosen = results[0];
+          }
+        }
+
+        const lat = Number(chosen.lat);
+        const lng = Number(chosen.lon);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          alert("Resultado inválido. Prueba otra búsqueda.");
+          return;
+        }
+
+        // Centrar y marcar
+        map.setView([lat, lng], 17, { animate: true });
+
+        if (__searchMarker) {
+          map.removeLayer(__searchMarker);
+          __searchMarker = null;
+        }
+
+        __searchMarker = L.marker([lat, lng]).addTo(map)
+          .bindPopup(`<b>📍 Resultado</b><br>${escapeHtml(chosen.display_name || q)}`)
+          .openPopup();
+
+      } catch (err) {
+        console.error(err);
+        hideLoading();
+        alert("Error buscando la dirección. Inténtalo de nuevo.");
+      }
+    }
+
+    // Botón buscar
+    const addressBtn = document.getElementById("addressSearchBtn");
+    const addressInput = document.getElementById("addressInput");
+
+    if (addressBtn && addressInput) {
+      addressBtn.addEventListener("click", () => {
+        searchAddressAndGo(addressInput.value);
+      });
+
+      // Enter en el input
+      addressInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          searchAddressAndGo(addressInput.value);
+        }
+      });
+    }
   </script>
 
 </body>
