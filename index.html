@@ -1,4 +1,4 @@
-en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de alimentacion: <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -166,7 +166,7 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
           </div>
 
           <p class="note" style="margin-top:10px;">
-            * Se guarda en Supabase actualizando <b>markers.food_point_id</b> del voluntario.
+            * Ahora una voluntaria puede estar en varios puntos usando la tabla <b>marker_assignments</b>.
           </p>
         </div>
       </div>
@@ -255,52 +255,81 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
     // ✅ BD helpers (user_id vs owner_id)
     // =========================
     async function fetchMarkersForUser(userId) {
-      // 1) probar user_id
       let res = await supabase
         .from("markers")
-        .select("id,type,name,description,fp_id,food_point_id,created_at")
+        .select("id,type,name,description,fp_id,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: true });
 
-      // 2) si falla por columna, probar owner_id
       if (res.error && (String(res.error.message || "").toLowerCase().includes("user_id"))) {
         res = await supabase
           .from("markers")
-          .select("id,type,name,description,fp_id,food_point_id,created_at")
+          .select("id,type,name,description,fp_id,created_at")
           .eq("owner_id", userId)
           .order("created_at", { ascending: true });
       }
       return res;
     }
 
-    async function fetchSharesForUser(userId) {
-      let res = await supabase
-        .from("shares")
-        .select("shared_email,created_at")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: false });
+    async function fetchAssignmentsForUser(userId) {
+      // tabla nueva: marker_assignments
+      const res = await supabase
+        .from("marker_assignments")
+        .select("id,volunteer_id,food_point_fp_id,created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
 
-      if (res.error && (String(res.error.message || "").toLowerCase().includes("owner_id"))) {
-        res = await supabase
-          .from("shares")
-          .select("shared_email,created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-      }
       return res;
+    }
+
+    async function addAssignment(userId, volunteerId, fpId) {
+      const { error } = await supabase
+        .from("marker_assignments")
+        .insert({
+          user_id: userId,
+          volunteer_id: volunteerId,
+          food_point_fp_id: fpId
+        });
+
+      if (error) {
+        alert("Error asignando voluntario: " + error.message);
+        return false;
+      }
+      return true;
+    }
+
+    async function removeAssignment(assignmentId) {
+      const { error } = await supabase
+        .from("marker_assignments")
+        .delete()
+        .eq("id", assignmentId);
+
+      if (error) {
+        alert("Error quitando voluntario: " + error.message);
+        return false;
+      }
+      return true;
     }
 
     // =========================
     // ✅ Estado
     // =========================
     let currentUser = null;
-    let markersCache = [];   // rows
+    let markersCache = [];       // markers
+    let assignmentsCache = [];   // marker_assignments
     let __currentFpId = null;
 
     function splitMarkers(markers) {
       const volunteers = markers.filter(m => m.type === "Voluntario");
       const foodPoints = markers.filter(m => m.type === "Punto de alimentación");
       return { volunteers, foodPoints };
+    }
+
+    function assignmentsForFp(fpId) {
+      return assignmentsCache.filter(a => (a.food_point_fp_id || "") === fpId);
+    }
+    function isVolunteerAssignedToFp(volunteerId, fpId) {
+      return assignmentsCache.some(a => String(a.volunteer_id) === String(volunteerId) && (a.food_point_fp_id || "") === fpId);
     }
 
     function renderCounts(volunteers, foodPoints) {
@@ -325,7 +354,7 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
 
       fpMiniList.innerHTML = shown.map(fp => {
         const fpId = fp.fp_id || "";
-        const assignedCount = volunteers.filter(v => (v.food_point_id || "") === fpId).length;
+        const assignedCount = assignmentsForFp(fpId).length;
 
         return `
           <div class="mini-row">
@@ -347,19 +376,6 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
       });
     }
 
-    async function updateVolunteerFoodPoint(volunteerId, fpIdOrEmpty) {
-      const { error } = await supabase
-        .from("markers")
-        .update({ food_point_id: fpIdOrEmpty })
-        .eq("id", volunteerId);
-
-      if (error) {
-        alert("Error actualizando voluntario: " + error.message);
-        return false;
-      }
-      return true;
-    }
-
     function openFpModal(fpId) {
       __currentFpId = fpId;
 
@@ -370,37 +386,49 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
       fpModalTitle.textContent = `🟢 ${fp.name || "Punto de alimentación"}`;
       fpModalSub.textContent = fp.description ? fp.description : "Gestiona voluntarios de este punto";
 
-      const assigned = volunteers.filter(v => (v.food_point_id || "") === fpId);
-      const available = volunteers.filter(v => (v.food_point_id || "") !== fpId);
+      // Asignados = join assignments -> volunteer
+      const fpAssignments = assignmentsForFp(fpId);
+      const assignedVols = fpAssignments
+        .map(a => {
+          const v = volunteers.find(vv => String(vv.id) === String(a.volunteer_id));
+          return v ? { v, assignmentId: a.id } : null;
+        })
+        .filter(Boolean);
 
-      fpAssignedList.innerHTML = assigned.length ? assigned.map(v => `
+      fpAssignedList.innerHTML = assignedVols.length ? assignedVols.map(({ v, assignmentId }) => `
         <div class="mini-row">
           <div class="mini-left">
             <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
             <div class="mini-sub">${escapeHtml(v.description || "")}</div>
           </div>
           <div class="mini-actions">
-            <button class="mini-btn danger" type="button" data-unassign="${escapeAttr(String(v.id))}">Quitar</button>
+            <button class="mini-btn danger" type="button" data-unassign="${escapeAttr(String(assignmentId))}">Quitar</button>
           </div>
         </div>
       `).join("") : `<div class="note">No hay voluntarios asignados.</div>`;
 
-      fpAvailableList.innerHTML = available.length ? available.map(v => `
-        <div class="mini-row">
-          <div class="mini-left">
-            <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
-            <div class="mini-sub">${escapeHtml((v.food_point_id || "") ? "Asignado a otro punto" : "Sin asignar")}</div>
+      // Disponibles = todos (pero si ya está asignado a ESTE punto, desactivar)
+      fpAvailableList.innerHTML = volunteers.length ? volunteers.map(v => {
+        const already = isVolunteerAssignedToFp(v.id, fpId);
+        return `
+          <div class="mini-row">
+            <div class="mini-left">
+              <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
+              <div class="mini-sub">${already ? "Ya asignado a este punto" : "Disponible"}</div>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" type="button" data-assign="${escapeAttr(String(v.id))}" ${already ? "disabled" : ""}>
+                ${already ? "Asignado" : "Asignar"}
+              </button>
+            </div>
           </div>
-          <div class="mini-actions">
-            <button class="mini-btn" type="button" data-assign="${escapeAttr(String(v.id))}">Asignar</button>
-          </div>
-        </div>
-      `).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
+        `;
+      }).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
 
       fpAssignedList.querySelectorAll("button[data-unassign]").forEach(b => {
         b.addEventListener("click", async () => {
-          const id = b.getAttribute("data-unassign");
-          const ok = await updateVolunteerFoodPoint(id, "");
+          const assignmentId = b.getAttribute("data-unassign");
+          const ok = await removeAssignment(assignmentId);
           if (!ok) return;
           await refreshHomeData(true);
         });
@@ -408,8 +436,8 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
 
       fpAvailableList.querySelectorAll("button[data-assign]").forEach(b => {
         b.addEventListener("click", async () => {
-          const id = b.getAttribute("data-assign");
-          const ok = await updateVolunteerFoodPoint(id, fpId);
+          const volunteerId = b.getAttribute("data-assign");
+          const ok = await addAssignment(currentUser.id, volunteerId, fpId);
           if (!ok) return;
           await refreshHomeData(true);
         });
@@ -419,13 +447,20 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
     }
 
     async function refreshHomeData(keepModal = false) {
-      const { data: markers, error } = await fetchMarkersForUser(currentUser.id);
-      if (error) {
-        alert("Error cargando marcadores: " + error.message);
+      const markersRes = await fetchMarkersForUser(currentUser.id);
+      if (markersRes.error) {
+        alert("Error cargando marcadores: " + markersRes.error.message);
         return;
       }
+      markersCache = markersRes.data || [];
 
-      markersCache = markers || [];
+      const assignRes = await fetchAssignmentsForUser(currentUser.id);
+      if (assignRes.error) {
+        alert("Error cargando asignaciones: " + assignRes.error.message + "\n\n(Falta crear tabla marker_assignments)");
+        assignmentsCache = [];
+      } else {
+        assignmentsCache = assignRes.data || [];
+      }
 
       const { volunteers, foodPoints } = splitMarkers(markersCache);
       renderCounts(volunteers, foodPoints);
@@ -434,6 +469,23 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
       if (keepModal && fpModal.classList.contains("open") && __currentFpId) {
         openFpModal(__currentFpId);
       }
+    }
+
+    async function fetchSharesForUser(userId) {
+      let res = await supabase
+        .from("shares")
+        .select("shared_email,created_at")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (res.error && (String(res.error.message || "").toLowerCase().includes("owner_id"))) {
+        res = await supabase
+          .from("shares")
+          .select("shared_email,created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
+      }
+      return res;
     }
 
     async function loadHomeFromSupabase() {
@@ -465,7 +517,7 @@ en los puntos de alimentacion las voluntarias pueden estar en mas de un punto de
       if (loginCta) loginCta.href = "mapa.html";
       hint.textContent = "Sesión: " + (user.email || "ok");
 
-      // ✅ Cargar marcadores (y ya salen voluntarios)
+      // ✅ Cargar marcadores + asignaciones (y ya salen voluntarios)
       await refreshHomeData(false);
 
       // Shares
