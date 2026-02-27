@@ -7,6 +7,26 @@
   <title>Proteccion Animal - Inicio</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    .pager-btn {
+      border: 1px solid rgba(17, 119, 204, .25);
+      background: rgba(255, 255, 255, .9);
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .pager-btn.active {
+      background: rgba(17, 119, 204, .12);
+      border-color: rgba(17, 119, 204, .45);
+    }
+
+    .pager-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 
 <body>
@@ -124,60 +144,61 @@
         <div class="mini-list" id="fpMiniList"></div>
         <div id="fpPagerWrap" style="display:none; margin-top:10px; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
         </div>
-      </section>
+  </div>
+  </section>
 
-      <section class="grid">
-        <article class="panel">
-          <h3>1) Crea tus lugares</h3>
-          <p>Haz clic en el mapa y elige voluntario o punto de alimentación.</p>
-        </article>
-        <article class="panel">
-          <h3>2) Se guardan en tu cuenta</h3>
-          <p>Se guardan asociados a tu usuario (Supabase).</p>
-        </article>
-        <article class="panel">
-          <h3>3) Comparte si quieres</h3>
-          <p>Invita a otro usuario para que vea tu mapa.</p>
-        </article>
-      </section>
-    </main>
+  <section class="grid">
+    <article class="panel">
+      <h3>1) Crea tus lugares</h3>
+      <p>Haz clic en el mapa y elige voluntario o punto de alimentación.</p>
+    </article>
+    <article class="panel">
+      <h3>2) Se guardan en tu cuenta</h3>
+      <p>Se guardan asociados a tu usuario (Supabase).</p>
+    </article>
+    <article class="panel">
+      <h3>3) Comparte si quieres</h3>
+      <p>Invita a otro usuario para que vea tu mapa.</p>
+    </article>
+  </section>
+  </main>
 
-    <!-- ✅ Modal REAL: gestionar punto -->
-    <div class="modal" id="fpModal" aria-hidden="true">
-      <div class="modal__backdrop" id="fpModalCloseBg"></div>
+  <!-- ✅ Modal REAL: gestionar punto -->
+  <div class="modal" id="fpModal" aria-hidden="true">
+    <div class="modal__backdrop" id="fpModalCloseBg"></div>
 
-      <div class="modal__card" role="dialog" aria-modal="true" aria-label="Gestionar punto de alimentación">
-        <div class="modal__head">
-          <div>
-            <div class="modal__title" id="fpModalTitle">Punto</div>
-            <div class="modal__subtitle" id="fpModalSub">—</div>
-          </div>
-          <button class="modal__close" id="fpModalCloseBtn" type="button">✖</button>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-label="Gestionar punto de alimentación">
+      <div class="modal__head">
+        <div>
+          <div class="modal__title" id="fpModalTitle">Punto</div>
+          <div class="modal__subtitle" id="fpModalSub">—</div>
         </div>
+        <button class="modal__close" id="fpModalCloseBtn" type="button">✖</button>
+      </div>
 
-        <div class="modal__body">
-          <div class="modal__grid">
-            <div class="modal__box">
-              <div class="modal__boxTitle">Voluntarios asignados</div>
-              <div class="mini-list" id="fpAssignedList"></div>
-            </div>
-
-            <div class="modal__box">
-              <div class="modal__boxTitle">Voluntarios disponibles</div>
-              <div class="mini-list" id="fpAvailableList"></div>
-            </div>
+      <div class="modal__body">
+        <div class="modal__grid">
+          <div class="modal__box">
+            <div class="modal__boxTitle">Voluntarios asignados</div>
+            <div class="mini-list" id="fpAssignedList"></div>
           </div>
 
-          <p class="note" style="margin-top:10px;">
-            * Ahora una voluntaria puede estar en varios puntos usando la tabla <b>marker_assignments</b>.
-          </p>
+          <div class="modal__box">
+            <div class="modal__boxTitle">Voluntarios disponibles</div>
+            <div class="mini-list" id="fpAvailableList"></div>
+          </div>
         </div>
+
+        <p class="note" style="margin-top:10px;">
+          * Ahora una voluntaria puede estar en varios puntos usando la tabla <b>marker_assignments</b>.
+        </p>
       </div>
     </div>
+  </div>
 
-    <footer class="footer">
-      <p>© <span id="year"></span></p>
-    </footer>
+  <footer class="footer">
+    <p>© <span id="year"></span></p>
+  </footer>
 
   </div>
 
@@ -348,7 +369,7 @@
     // ✅ PAGINACIÓN PUNTOS (Index)
     // =========================
     let fpPage = 1;
-    const FP_PER_PAGE = 6; // <- cambia esto si quieres más/menos filas por página
+    const FP_PER_PAGE = 6;
 
     function renderMiniFoodPoints(foodPoints, volunteers) {
       const pager = document.getElementById("fpPagerWrap");
@@ -356,23 +377,17 @@
 
       if (!Array.isArray(foodPoints) || foodPoints.length === 0) {
         fpMiniList.innerHTML = `<div class="note">No hay puntos todavía.</div>`;
-        if (pager) pager.style.display = "none";
+        if (pager) { pager.style.display = "none"; pager.innerHTML = ""; }
         return;
       }
 
-      // total páginas
       const totalPages = Math.max(1, Math.ceil(foodPoints.length / FP_PER_PAGE));
-
-      // asegurar fpPage válida
       if (fpPage > totalPages) fpPage = totalPages;
       if (fpPage < 1) fpPage = 1;
 
-      // slice de la página
       const start = (fpPage - 1) * FP_PER_PAGE;
-      const end = start + FP_PER_PAGE;
-      const shown = foodPoints.slice(start, end);
+      const shown = foodPoints.slice(start, start + FP_PER_PAGE);
 
-      // render lista
       fpMiniList.innerHTML = shown.map(fp => {
         const fpId = fp.fp_id || "";
         const assignedCount = assignmentsForFp(fpId).length;
@@ -394,7 +409,7 @@
         btn.addEventListener("click", () => openFpModal(btn.getAttribute("data-fp")));
       });
 
-      // render paginación
+      // ✅ PAGINADOR
       if (!pager) return;
 
       if (totalPages <= 1) {
@@ -405,33 +420,71 @@
 
       pager.style.display = "flex";
 
-      // Botón atrás
-      const prevDisabled = fpPage === 1;
-      const nextDisabled = fpPage === totalPages;
+      const windowSize = 7;
+      let startPage = Math.max(1, fpPage - Math.floor(windowSize / 2));
+      let endPage = startPage + windowSize - 1;
+      if (endPage > totalPages) {
+        endPage = totalPages;
+        startPage = Math.max(1, endPage - windowSize + 1);
+      }
 
-      // Para que no salgan 50 botones si hay muchís
+      let html = `
+    <button class="pager-btn" type="button" data-page="prev" ${fpPage === 1 ? "disabled" : ""}>‹</button>
+  `;
+
+      if (startPage > 1) {
+        html += `<button class="pager-btn" type="button" data-page="1">1</button>`;
+        if (startPage > 2) html += `<span style="padding:6px 4px; font-weight:900; opacity:.6;">…</span>`;
+      }
+
+      for (let p = startPage; p <= endPage; p++) {
+        html += `<button class="pager-btn ${p === fpPage ? "active" : ""}" type="button" data-page="${p}">${p}</button>`;
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) html += `<span style="padding:6px 4px; font-weight:900; opacity:.6;">…</span>`;
+        html += `<button class="pager-btn" type="button" data-page="${totalPages}">${totalPages}</button>`;
+      }
+
+      html += `
+    <button class="pager-btn" type="button" data-page="next" ${fpPage === totalPages ? "disabled" : ""}>›</button>
+  `;
+
+      pager.innerHTML = html;
+
+      pager.querySelectorAll("button[data-page]").forEach(b => {
+        b.addEventListener("click", () => {
+          const v = b.getAttribute("data-page");
+          if (v === "prev") fpPage = Math.max(1, fpPage - 1);
+          else if (v === "next") fpPage = Math.min(totalPages, fpPage + 1);
+          else fpPage = Number(v) || 1;
+
+          const { volunteers: vols, foodPoints: fps } = splitMarkers(markersCache);
+          renderMiniFoodPoints(fps, vols);
+        });
+      });
     }
 
-      function openFpModal(fpId) {
-        __currentFpId = fpId;
+    function openFpModal(fpId) {
+      __currentFpId = fpId;
 
-        const { volunteers, foodPoints } = splitMarkers(markersCache);
-        const fp = foodPoints.find(p => (p.fp_id || "") === fpId);
-        if (!fp) return;
+      const { volunteers, foodPoints } = splitMarkers(markersCache);
+      const fp = foodPoints.find(p => (p.fp_id || "") === fpId);
+      if (!fp) return;
 
-        fpModalTitle.textContent = `🟢 ${fp.name || "Punto de alimentación"}`;
-        fpModalSub.textContent = fp.description ? fp.description : "Gestiona voluntarios de este punto";
+      fpModalTitle.textContent = `🟢 ${fp.name || "Punto de alimentación"}`;
+      fpModalSub.textContent = fp.description ? fp.description : "Gestiona voluntarios de este punto";
 
-        // Asignados = join assignments -> volunteer
-        const fpAssignments = assignmentsForFp(fpId);
-        const assignedVols = fpAssignments
-          .map(a => {
-            const v = volunteers.find(vv => String(vv.id) === String(a.volunteer_id));
-            return v ? { v, assignmentId: a.id } : null;
-          })
-          .filter(Boolean);
+      // Asignados = join assignments -> volunteer
+      const fpAssignments = assignmentsForFp(fpId);
+      const assignedVols = fpAssignments
+        .map(a => {
+          const v = volunteers.find(vv => String(vv.id) === String(a.volunteer_id));
+          return v ? { v, assignmentId: a.id } : null;
+        })
+        .filter(Boolean);
 
-        fpAssignedList.innerHTML = assignedVols.length ? assignedVols.map(({ v, assignmentId }) => `
+      fpAssignedList.innerHTML = assignedVols.length ? assignedVols.map(({ v, assignmentId }) => `
         <div class="mini-row">
           <div class="mini-left">
             <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
@@ -443,10 +496,10 @@
         </div>
       `).join("") : `<div class="note">No hay voluntarios asignados.</div>`;
 
-        // Disponibles = todos (pero si ya está asignado a ESTE punto, desactivar)
-        fpAvailableList.innerHTML = volunteers.length ? volunteers.map(v => {
-          const already = isVolunteerAssignedToFp(v.id, fpId);
-          return `
+      // Disponibles = todos (pero si ya está asignado a ESTE punto, desactivar)
+      fpAvailableList.innerHTML = volunteers.length ? volunteers.map(v => {
+        const already = isVolunteerAssignedToFp(v.id, fpId);
+        return `
           <div class="mini-row">
             <div class="mini-left">
               <div class="mini-title">🔴 ${escapeHtml(v.name || "Voluntario")}</div>
@@ -459,119 +512,119 @@
             </div>
           </div>
         `;
-        }).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
+      }).join("") : `<div class="note">No hay voluntarios disponibles.</div>`;
 
-        fpAssignedList.querySelectorAll("button[data-unassign]").forEach(b => {
-          b.addEventListener("click", async () => {
-            const assignmentId = b.getAttribute("data-unassign");
-            const ok = await removeAssignment(assignmentId);
-            if (!ok) return;
-            await refreshHomeData(true);
-          });
+      fpAssignedList.querySelectorAll("button[data-unassign]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const assignmentId = b.getAttribute("data-unassign");
+          const ok = await removeAssignment(assignmentId);
+          if (!ok) return;
+          await refreshHomeData(true);
         });
+      });
 
-        fpAvailableList.querySelectorAll("button[data-assign]").forEach(b => {
-          b.addEventListener("click", async () => {
-            const volunteerId = b.getAttribute("data-assign");
-            const ok = await addAssignment(currentUser.id, volunteerId, fpId);
-            if (!ok) return;
-            await refreshHomeData(true);
-          });
+      fpAvailableList.querySelectorAll("button[data-assign]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const volunteerId = b.getAttribute("data-assign");
+          const ok = await addAssignment(currentUser.id, volunteerId, fpId);
+          if (!ok) return;
+          await refreshHomeData(true);
         });
+      });
 
-        openModal();
+      openModal();
+    }
+
+    async function refreshHomeData(keepModal = false) {
+      const markersRes = await fetchMarkersForUser(currentUser.id);
+      if (markersRes.error) {
+        alert("Error cargando marcadores: " + markersRes.error.message);
+        return;
+      }
+      markersCache = markersRes.data || [];
+
+      const assignRes = await fetchAssignmentsForUser(currentUser.id);
+      if (assignRes.error) {
+        alert("Error cargando asignaciones: " + assignRes.error.message + "\n\n(Falta crear tabla marker_assignments)");
+        assignmentsCache = [];
+      } else {
+        assignmentsCache = assignRes.data || [];
       }
 
-      async function refreshHomeData(keepModal = false) {
-        const markersRes = await fetchMarkersForUser(currentUser.id);
-        if (markersRes.error) {
-          alert("Error cargando marcadores: " + markersRes.error.message);
-          return;
-        }
-        markersCache = markersRes.data || [];
+      const { volunteers, foodPoints } = splitMarkers(markersCache);
+      renderCounts(volunteers, foodPoints);
+      renderMiniFoodPoints(foodPoints, volunteers);
 
-        const assignRes = await fetchAssignmentsForUser(currentUser.id);
-        if (assignRes.error) {
-          alert("Error cargando asignaciones: " + assignRes.error.message + "\n\n(Falta crear tabla marker_assignments)");
-          assignmentsCache = [];
-        } else {
-          assignmentsCache = assignRes.data || [];
-        }
-
-        const { volunteers, foodPoints } = splitMarkers(markersCache);
-        renderCounts(volunteers, foodPoints);
-        renderMiniFoodPoints(foodPoints, volunteers);
-
-        if (keepModal && fpModal.classList.contains("open") && __currentFpId) {
-          openFpModal(__currentFpId);
-        }
+      if (keepModal && fpModal.classList.contains("open") && __currentFpId) {
+        openFpModal(__currentFpId);
       }
+    }
 
-      async function fetchSharesForUser(userId) {
-        let res = await supabase
+    async function fetchSharesForUser(userId) {
+      let res = await supabase
+        .from("shares")
+        .select("shared_email,created_at")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (res.error && (String(res.error.message || "").toLowerCase().includes("owner_id"))) {
+        res = await supabase
           .from("shares")
           .select("shared_email,created_at")
-          .eq("owner_id", userId)
+          .eq("user_id", userId)
           .order("created_at", { ascending: false });
+      }
+      return res;
+    }
 
-        if (res.error && (String(res.error.message || "").toLowerCase().includes("owner_id"))) {
-          res = await supabase
-            .from("shares")
-            .select("shared_email,created_at")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false });
-        }
-        return res;
+    async function loadHomeFromSupabase() {
+      const { data: u } = await supabase.auth.getUser();
+      const user = u?.user;
+      currentUser = user || null;
+
+      if (!user) {
+        userText.textContent = "Login";
+        userBtn.href = "login.html";
+        dropdown.style.display = "none";
+        if (loginCta) loginCta.href = "login.html";
+
+        hint.textContent = "Inicia sesión para ver tu lista de compartidos.";
+        listEl.innerHTML = "";
+        volEl.textContent = "0";
+        foodEl.textContent = "0";
+
+        if (fpHint) fpHint.textContent = "Inicia sesión para ver los puntos.";
+        if (fpSummary) fpSummary.textContent = "—";
+        if (fpMiniList) fpMiniList.innerHTML = "";
+        return;
       }
 
-      async function loadHomeFromSupabase() {
-        const { data: u } = await supabase.auth.getUser();
-        const user = u?.user;
-        currentUser = user || null;
+      const displayName = (user.user_metadata?.display_name || "").trim();
+      userText.textContent = displayName || user.email || "Cuenta";
+      userBtn.href = "#";
+      dropdown.style.display = "";
+      if (loginCta) loginCta.href = "mapa.html";
+      hint.textContent = "Sesión: " + (user.email || "ok");
 
-        if (!user) {
-          userText.textContent = "Login";
-          userBtn.href = "login.html";
-          dropdown.style.display = "none";
-          if (loginCta) loginCta.href = "login.html";
+      // ✅ Cargar marcadores + asignaciones (y ya salen voluntarios)
+      await refreshHomeData(false);
 
-          hint.textContent = "Inicia sesión para ver tu lista de compartidos.";
-          listEl.innerHTML = "";
-          volEl.textContent = "0";
-          foodEl.textContent = "0";
-
-          if (fpHint) fpHint.textContent = "Inicia sesión para ver los puntos.";
-          if (fpSummary) fpSummary.textContent = "—";
-          if (fpMiniList) fpMiniList.innerHTML = "";
-          return;
-        }
-
-        const displayName = (user.user_metadata?.display_name || "").trim();
-        userText.textContent = displayName || user.email || "Cuenta";
-        userBtn.href = "#";
-        dropdown.style.display = "";
-        if (loginCta) loginCta.href = "mapa.html";
-        hint.textContent = "Sesión: " + (user.email || "ok");
-
-        // ✅ Cargar marcadores + asignaciones (y ya salen voluntarios)
-        await refreshHomeData(false);
-
-        // Shares
-        const sharesRes = await fetchSharesForUser(user.id);
-        if (sharesRes.error) {
-          console.warn("No puedo leer tabla shares:", sharesRes.error.message);
-          listEl.innerHTML = "<li>(Aún falta crear/ajustar la tabla <b>shares</b> en Supabase)</li>";
-          return;
-        }
-        const shares = sharesRes.data || [];
-        if (shares.length === 0) {
-          listEl.innerHTML = "<li>No has compartido el mapa con nadie todavía.</li>";
-        } else {
-          listEl.innerHTML = shares.map(s => `<li><b>${escapeHtml(s.shared_email || "")}</b></li>`).join("");
-        }
+      // Shares
+      const sharesRes = await fetchSharesForUser(user.id);
+      if (sharesRes.error) {
+        console.warn("No puedo leer tabla shares:", sharesRes.error.message);
+        listEl.innerHTML = "<li>(Aún falta crear/ajustar la tabla <b>shares</b> en Supabase)</li>";
+        return;
       }
+      const shares = sharesRes.data || [];
+      if (shares.length === 0) {
+        listEl.innerHTML = "<li>No has compartido el mapa con nadie todavía.</li>";
+      } else {
+        listEl.innerHTML = shares.map(s => `<li><b>${escapeHtml(s.shared_email || "")}</b></li>`).join("");
+      }
+    }
 
-      loadHomeFromSupabase();
+    loadHomeFromSupabase();
   </script>
 
 </body>
