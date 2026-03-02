@@ -191,7 +191,8 @@
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL</p>
+    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL | <strong>Diseño y desarrollo web por
+        Nakay</strong></p>
   </footer>
 
   <!-- ✅ input oculto para foto desde archivos -->
@@ -418,6 +419,51 @@
     let markerLocations = [];         // array para tu lógica del mapa
     const markersByKey = new Map();   // key -> leaflet marker
 
+    // ✅ NUEVO: asignaciones (muchos a muchos)
+    let assignmentsCache = []; // rows de marker_assignments (si existe)
+
+    async function loadAssignmentsFromDb() {
+      try {
+        const { data, error } = await supabase
+          .from("marker_assignments")
+          .select("id,user_id,volunteer_id,food_point_fp_id,created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.warn("No puedo leer marker_assignments:", error.message);
+          assignmentsCache = [];
+          return;
+        }
+
+        assignmentsCache = data || [];
+      } catch (e) {
+        console.warn("marker_assignments no disponible:", e);
+        assignmentsCache = [];
+      }
+    }
+
+    function getFoodPointNamesForVolunteer(volunteerId) {
+      const names = [];
+
+      // 1) NUEVA relación: marker_assignments
+      const rows = assignmentsCache.filter(a => String(a.volunteer_id) === String(volunteerId));
+      for (const a of rows) {
+        const fpId = a.food_point_fp_id || "";
+        const fpName = getFoodPointNameByFpId(fpId);
+        if (fpName) names.push(fpName);
+      }
+
+      // 2) COMPATIBILIDAD: vieja columna markers.food_point_id
+      const legacy = markerLocations.find(m => m.type === "Voluntario" && String(m.id) === String(volunteerId));
+      if (legacy && legacy.foodPointId) {
+        const fpNameLegacy = getFoodPointNameByFpId(legacy.foodPointId);
+        if (fpNameLegacy) names.push(fpNameLegacy);
+      }
+
+      return Array.from(new Set(names));
+    }
+
     // si el bucket es public, publicUrl vale
     function getPublicUrl(photoPath) {
       if (!photoPath) return "";
@@ -438,6 +484,9 @@
         alert("Error cargando marcadores: " + error.message);
         return;
       }
+
+      // ✅ NUEVO: cargar asignaciones ANTES de pintar popups
+      await loadAssignmentsFromDb();
 
       // limpiar markers leaflet
       markersByKey.clear();
@@ -472,7 +521,7 @@
 
     // =============================
     // ✅ REALTIME: refrescar mapa al instante
-    // (cuando el index asigna voluntario -> UPDATE en markers)
+    // (cuando el index asigna voluntario -> INSERT/DELETE en marker_assignments)
     // =============================
     let realtimeChannel = null;
 
@@ -496,6 +545,19 @@
             },
             async (payload) => {
               // Re-carga completa (simple y fiable)
+              await loadMarkersFromDb();
+            }
+          )
+          // ✅ NUEVO: también escuchar asignaciones
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "marker_assignments",
+              filter: `user_id=eq.${user.id}`
+            },
+            async () => {
               await loadMarkersFromDb();
             }
           )
@@ -622,11 +684,16 @@
 
       let belongsHtml = "";
       if (m.type === "Voluntario") {
-        const fpName = getFoodPointNameByFpId(m.foodPointId);
-        if (fpName) {
+        // ✅ NUEVO: mostrar TODOS los puntos usando marker_assignments
+        const fps = getFoodPointNamesForVolunteer(m.id);
+
+        if (fps.length) {
           belongsHtml = `
             <div style="margin-top:8px; padding:8px; border-radius:12px; background: rgba(30,142,62,0.10); border: 1px solid rgba(30,142,62,0.22);">
-              <b>🟢 Pertenece a:</b> ${escapeHtml(fpName)}
+              <b>🟢 Pertenece a:</b>
+              <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+                ${fps.map(n => `<div>• ${escapeHtml(n)}</div>`).join("")}
+              </div>
             </div>
           `;
         } else {
