@@ -26,6 +26,50 @@
       opacity: .4;
       cursor: not-allowed;
     }
+
+    /* ============================= */
+    /* SCROLL MODAL VOLUNTARIOS */
+    /* ============================= */
+
+    .modal__card {
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal__body {
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal__grid {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .modal__box {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal__box .mini-list {
+      overflow-y: auto;
+      max-height: 320px;
+      padding-right: 6px;
+    }
+
+    /* Scroll bonito */
+    .modal__box .mini-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .modal__box .mini-list::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+    }
   </style>
 </head>
 
@@ -96,10 +140,10 @@
               <div class="chip chip--green">Seguro</div>
             </div>
 
-            <h2 class="card__title">Tu mapa, tuyo</h2>
+            <h2 class="card__title">Contador de voluntarios y puntos</h2>
 
             <p class="card__text">
-              Cada marcador se guarda asociado a tu cuenta (Supabase).
+              Los contadores son obtenidos del mapa.
             </p>
 
             <div class="card__stats" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
@@ -153,8 +197,8 @@
       <p>Haz clic en el mapa y elige voluntario o punto de alimentación.</p>
     </article>
     <article class="panel">
-      <h3>2) Se guardan en tu cuenta</h3>
-      <p>Se guardan asociados a tu usuario (Supabase).</p>
+      <h3>2) Relaciones de puntos de alimentacion</h3>
+      <p>Selecciona en que punto de alimentacion quieres relacionar a dicho voluntario.</p>
     </article>
     <article class="panel">
       <h3>3) Comparte si quieres</h3>
@@ -196,8 +240,10 @@
     </div>
   </div>
 
+  <!-- FOOTER -->
   <footer class="footer">
-    <p>© <span id="year"></span></p>
+    <p>© <span id="year"></span> Extension de bello horizonte - PROTECCION ANIMAL | <strong>Diseño y desarrollo web por
+        Nakay</strong></p>
   </footer>
 
   </div>
