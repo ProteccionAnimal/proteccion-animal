@@ -740,9 +740,12 @@
       const root = e.popup.getElement();
       if (!root) return;
 
+      // ===============================
+      // 🗑 ELIMINAR
+      // ===============================
       root.querySelectorAll("button[data-action='delete']").forEach(btn => {
-        if (btn.dataset.bound === "1") return;
-        btn.dataset.bound = "1";
+        if (btn.dataset.boundDelete === "1") return;
+        btn.dataset.boundDelete = "1";
 
         btn.addEventListener("click", async (ev) => {
           ev.preventDefault();
@@ -753,85 +756,88 @@
           if (!ok) return;
 
           await deleteMarkerById(id);
-          // ===============================
-          // EDITAR MARCADOR
-          // ===============================
-          root.querySelectorAll("button[data-action='edit']").forEach(btn => {
-            if (btn.dataset.boundEdit === "1") return;
-            btn.dataset.boundEdit = "1";
-
-            btn.addEventListener("click", async (ev) => {
-              ev.preventDefault();
-              ev.stopPropagation();
-
-              const id = btn.dataset.id;
-              const markerData = markerLocations.find(x => String(x.id) === String(id));
-              if (!markerData) return;
-
-              const newName = prompt("Nuevo nombre:", markerData.name);
-              if (!newName) return;
-
-              const newDesc = prompt("Nueva descripción:", markerData.description || "");
-              if (!newDesc) return;
-
-              let newPhotoPath = markerData.photoPath;
-
-              const changePhoto = confirm("¿Quieres cambiar la foto?");
-              if (changePhoto) {
-
-                await new Promise(resolve => {
-                  openPhotoModal(async (fileOrNull) => {
-                    if (fileOrNull) {
-                      const ext = (fileOrNull.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-                      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-                      const { error: upErr } = await supabase
-                        .storage
-                        .from(BUCKET)
-                        .upload(path, fileOrNull, { upsert: false });
-
-                      if (!upErr) {
-                        if (markerData.photoPath) {
-                          await supabase.storage.from(BUCKET).remove([markerData.photoPath]);
-                        }
-                        newPhotoPath = path;
-                      }
-                    }
-                    resolve();
-                  });
-                });
-              }
-
-              try {
-                showLoading("Actualizando marcador…");
-
-                const { error } = await supabase
-                  .from("markers")
-                  .update({
-                    name: newName,
-                    description: newDesc,
-                    photo_path: newPhotoPath
-                  })
-                  .eq("id", id);
-
-                hideLoading();
-
-                if (error) {
-                  alert("Error actualizando: " + error.message);
-                  return;
-                }
-
-                await loadMarkersFromDb();
-                map.closePopup();
-
-              } catch (err) {
-                console.error(err);
-                hideLoading();
-                alert("Error inesperado actualizando.");
-              }
-            });
-          });
           map.closePopup();
+        });
+      });
+
+      // ===============================
+      // ✏️ EDITAR
+      // ===============================
+      root.querySelectorAll("button[data-action='edit']").forEach(btn => {
+        if (btn.dataset.boundEdit === "1") return;
+        btn.dataset.boundEdit = "1";
+
+        btn.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+
+          const id = btn.dataset.id;
+          const markerData = markerLocations.find(x => String(x.id) === String(id));
+          if (!markerData) return;
+
+          const newName = prompt("Nuevo nombre:", markerData.name);
+          if (!newName) return;
+
+          const newDesc = prompt("Nueva descripción:", markerData.description || "");
+          if (!newDesc) return;
+
+          let newPhotoPath = markerData.photoPath;
+
+          const changePhoto = confirm("¿Quieres cambiar la foto?");
+          if (changePhoto) {
+            await new Promise(resolve => {
+              openPhotoModal(async (fileOrNull) => {
+                if (fileOrNull) {
+                  const ext = (fileOrNull.name.split(".").pop() || "jpg")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, "") || "jpg";
+
+                  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+                  const { error: upErr } = await supabase
+                    .storage
+                    .from(BUCKET)
+                    .upload(path, fileOrNull, { upsert: false });
+
+                  if (!upErr) {
+                    if (markerData.photoPath) {
+                      await supabase.storage.from(BUCKET).remove([markerData.photoPath]);
+                    }
+                    newPhotoPath = path;
+                  }
+                }
+                resolve();
+              });
+            });
+          }
+
+          try {
+            showLoading("Actualizando marcador…");
+
+            const { error } = await supabase
+              .from("markers")
+              .update({
+                name: newName,
+                description: newDesc,
+                photo_path: newPhotoPath
+              })
+              .eq("id", id);
+
+            hideLoading();
+
+            if (error) {
+              alert("Error actualizando: " + error.message);
+              return;
+            }
+
+            await loadMarkersFromDb();
+            map.closePopup();
+
+          } catch (err) {
+            console.error(err);
+            hideLoading();
+            alert("Error inesperado actualizando.");
+          }
         });
       });
     });
